@@ -337,6 +337,7 @@ function ProfileScreen({
         onChange={(hasChildren) =>
           onChange(normalizeProfile({
             ...profile,
+            household: hasChildren ? profile.household : "single",
             hasChildren,
             childrenCount: hasChildren ? Math.max(profile.childrenCount, 1) : 0,
             childrenAges: hasChildren ? profile.childrenAges : []
