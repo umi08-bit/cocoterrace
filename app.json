@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "ココロテラス",
+    "slug": "cocoterrace",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "jp.cocoterrace.app"
+    },
+    "android": {
+      "package": "jp.cocoterrace.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#F7FAF7"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+.npm-cache/
+.home/
+dist/
+dist-check/
+web-build/
+expo-server.log
+expo-server.err.log
+npm-debug.log*
