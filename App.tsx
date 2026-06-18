@@ -20,6 +20,13 @@ import { categoryLabel, matchLabel, t } from "./src/i18n";
 import { Language, MatchLevel, SupportProgram, UserProfile } from "./src/types";
 
 type Tab = "home" | "search" | "alerts" | "profile";
+const SUPPORTED_REGIONS = [
+  "神戸市",
+  "尼崎市",
+  "西宮市",
+  "明石市",
+  "姫路市"
+] as const;
 type ConcernId =
   | "money"
   | "housing"
@@ -589,7 +596,15 @@ function ProfileForm({
 
   return (
     <>
-      <ProfileRow label={t(language, "region")} value={profile.region} />
+      <ChoiceRow
+        label={t(language, "region")}
+        choices={SUPPORTED_REGIONS}
+        value={profile.region}
+        language={language}
+        onChange={(region) =>
+          onChange(normalizeProfile({ ...profile, region }))
+        }
+      />
       <ChoiceRow
         label={t(language, "household")}
         choices={["single_parent", "two_parent", "single"]}
