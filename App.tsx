@@ -25,6 +25,7 @@ const initialProfile: UserProfile = {
   hasChildren: true,
   childrenCount: 2,
   childrenAges: [4, 9],
+  hasDisability: false,
   wantsForeignSupport: true,
   language: "ja",
   notificationsEnabled: true
@@ -82,7 +83,7 @@ export default function App() {
         </View>
         <SegmentedLanguage
           language={language}
-          onChange={(next) => setProfile({ ...profile, language: next })}
+          onChange={(next) => setProfile(normalizeProfile({ ...profile, language: next }))}
         />
       </View>
 
@@ -186,7 +187,7 @@ function SearchScreen({
   profile: UserProfile;
   onOpen: (program: SupportProgram) => void;
 }) {
-  const categories = ["childcare", "cash", "medical", "foreign"] as const;
+  const categories = ["childcare", "cash", "medical", "disability", "foreign"] as const;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -302,19 +303,44 @@ function ProfileScreen({
         choices={["single_parent", "two_parent", "single", "other"]}
         value={profile.household}
         language={language}
-        onChange={(household) => onChange({ ...profile, household })}
+        onChange={(household) =>
+          onChange(
+            normalizeProfile({
+              ...profile,
+              household,
+              hasChildren:
+                household === "single"
+                  ? false
+                  : household === "single_parent"
+                    ? true
+                    : profile.hasChildren,
+              childrenCount:
+                household === "single"
+                  ? 0
+                  : household === "single_parent"
+                    ? Math.max(profile.childrenCount, 1)
+                    : profile.childrenCount,
+              childrenAges:
+                household === "single"
+                  ? []
+                  : household === "single_parent"
+                    ? syncChildrenAges(profile.childrenAges, Math.max(profile.childrenCount, 1))
+                    : profile.childrenAges
+            })
+          )
+        }
       />
       <ToggleRow
         label={t(language, "children")}
         value={profile.hasChildren}
         language={language}
         onChange={(hasChildren) =>
-          onChange({
+          onChange(normalizeProfile({
             ...profile,
             hasChildren,
             childrenCount: hasChildren ? Math.max(profile.childrenCount, 1) : 0,
             childrenAges: hasChildren ? profile.childrenAges : []
-          })
+          }))
         }
       />
       {profile.hasChildren && (
@@ -323,21 +349,29 @@ function ProfileScreen({
           value={profile.childrenCount}
           suffix={t(language, "people")}
           onChange={(childrenCount) =>
-            onChange({
+            onChange(normalizeProfile({
               ...profile,
               childrenCount,
               hasChildren: childrenCount > 0,
               childrenAges: syncChildrenAges(profile.childrenAges, childrenCount)
-            })
+            }))
           }
         />
       )}
+      <ToggleRow
+        label={t(language, "disabilityStatus")}
+        value={profile.hasDisability}
+        language={language}
+        onChange={(hasDisability) =>
+          onChange(normalizeProfile({ ...profile, hasDisability }))
+        }
+      />
       <ToggleRow
         label={t(language, "foreignSupport")}
         value={profile.wantsForeignSupport}
         language={language}
         onChange={(wantsForeignSupport) =>
-          onChange({ ...profile, wantsForeignSupport })
+          onChange(normalizeProfile({ ...profile, wantsForeignSupport }))
         }
       />
       <ToggleRow
@@ -345,7 +379,7 @@ function ProfileScreen({
         value={profile.notificationsEnabled}
         language={language}
         onChange={(notificationsEnabled) =>
-          onChange({ ...profile, notificationsEnabled })
+          onChange(normalizeProfile({ ...profile, notificationsEnabled }))
         }
       />
       <View style={styles.noticeBand}>
@@ -721,6 +755,9 @@ function Pill({ text, tone }: { text: string; tone: MatchLevel | "soft" }) {
 
 function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLevel {
   if (program.region !== profile.region) return "unlikely";
+  if (program.tags.includes("disability_support") && !profile.hasDisability) {
+    return "unlikely";
+  }
   if (program.tags.includes("foreign_resident") && !profile.wantsForeignSupport) {
     return "unlikely";
   }
@@ -736,6 +773,9 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
 
   let score = 1;
   if (program.tags.includes("general_support")) score += 1;
+  if (profile.hasDisability && program.tags.includes("disability_support")) {
+    score += 3;
+  }
   if (
     profile.hasChildren &&
     profile.childrenCount > 0 &&
@@ -763,8 +803,42 @@ function formatProfileSummary(profile: UserProfile, language: Language) {
   const foreignText = profile.wantsForeignSupport
     ? t(language, "foreignSupportOn")
     : t(language, "foreignSupportOff");
+  const disabilityText = profile.hasDisability
+    ? t(language, "disabilitySupportOn")
+    : t(language, "disabilitySupportOff");
 
-  return `${profile.region} / ${t(language, profile.household)} / ${childText} / ${foreignText}`;
+  return `${profile.region} / ${t(language, profile.household)} / ${childText} / ${disabilityText} / ${foreignText}`;
+}
+
+function normalizeProfile(profile: UserProfile): UserProfile {
+  let next = { ...profile };
+
+  if (next.hasChildren && next.childrenCount > 0 && next.household === "single") {
+    next.household = "single_parent";
+  }
+
+  if (next.household === "single") {
+    next.hasChildren = false;
+    next.childrenCount = 0;
+    next.childrenAges = [];
+  }
+
+  if (next.household === "single_parent") {
+    next.hasChildren = true;
+    next.childrenCount = Math.max(next.childrenCount, 1);
+    next.childrenAges = syncChildrenAges(next.childrenAges, next.childrenCount);
+  }
+
+  if (!next.hasChildren || next.childrenCount === 0) {
+    next.hasChildren = false;
+    next.childrenCount = 0;
+    next.childrenAges = [];
+    if (next.household === "single_parent") {
+      next.household = "single";
+    }
+  }
+
+  return next;
 }
 
 function syncChildrenAges(currentAges: number[], nextCount: number) {

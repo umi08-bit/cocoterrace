@@ -7,6 +7,7 @@ export type Category =
   | "cash"
   | "medical"
   | "foreign"
+  | "disability"
   | "consultation";
 
 export type UserProfile = {
@@ -15,6 +16,7 @@ export type UserProfile = {
   hasChildren: boolean;
   childrenCount: number;
   childrenAges: number[];
+  hasDisability: boolean;
   wantsForeignSupport: boolean;
   language: Language;
   notificationsEnabled: boolean;

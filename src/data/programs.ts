@@ -65,7 +65,7 @@ export const supportPrograms: SupportProgram[] = [
     titleEn: "Single-Parent Family Support",
     category: "childcare",
     region: "神戸市",
-    sourceUrl: "https://www.city.kobe.lg.jp/kosodate/index.html",
+    sourceUrl: "https://www.city.kobe.lg.jp/a32986/kosodate/shien/family/index.html",
     organization: "神戸市",
     summaryJa:
       "神戸市の子育てページには、相談・窓口・施設の中に、ひとり親家庭支援の案内があります。",
@@ -89,6 +89,41 @@ export const supportPrograms: SupportProgram[] = [
     applicationMethodEn:
       "Check the single-parent support section on the official page for consultation or application counters.",
     tags: ["single_parent", "child_support", "consultation", "low_income"],
+    updatedAt: "2026-06-18"
+  },
+  {
+    id: "kobe-disability-benefits",
+    titleJa: "障害者（児）の手当・給付金",
+    titleEn: "Allowances and Benefits for People and Children with Disabilities",
+    category: "disability",
+    region: "神戸市",
+    sourceUrl: "https://www.city.kobe.lg.jp/a40792/kenko/handicap/seikatsujiritsu/keizaishien/s063.html",
+    organization: "神戸市",
+    summaryJa:
+      "障がいのある子どもや大人、その家族が確認できる手当・給付金の案内ページです。",
+    summaryEn:
+      "A Kobe City page about allowances and benefits for children and adults with disabilities and their families.",
+    eligibilityJa:
+      "障がいのある本人、障がいのある子どもを養育している人、または重度の障がいがある人を介護している人は、対象となる可能性があります。",
+    eligibilityEn:
+      "People with disabilities, guardians raising children with disabilities, or caregivers of people with severe disabilities may qualify.",
+    benefitJa:
+      "特別児童扶養手当、障害児福祉手当、特別障害者手当、重度心身障害者介護手当など。所得制限や障がいの程度などの条件があります。",
+    benefitEn:
+      "Includes special child rearing allowance, disabled child welfare allowance, special disability allowance, and severe disability caregiver allowance. Income and disability-level conditions apply.",
+    deadline: null,
+    requiredDocumentsJa: ["申請書", "診断書または障害者手帳など", "本人確認書類", "振込先が分かる書類"],
+    requiredDocumentsEn: [
+      "Application form",
+      "Medical certificate or disability certificate",
+      "ID document",
+      "Bank account document"
+    ],
+    applicationMethodJa:
+      "居住地の区役所・支所の保健福祉課で、対象となる手当や必要書類を確認します。",
+    applicationMethodEn:
+      "Check eligible allowances and required documents at the health and welfare section of your ward office or branch office.",
+    tags: ["disability_support", "cash_benefit", "caregiving"],
     updatedAt: "2026-06-18"
   },
   {
