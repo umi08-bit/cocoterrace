@@ -208,7 +208,16 @@ export default function App() {
         />
       )}
       {tab === "profile" && (
-        <ProfileScreen profile={profile} onChange={setProfile} />
+        <ProfileScreen
+          profile={profile}
+          onChange={setProfile}
+          onReset={async () => {
+            await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+            setSelectedProgram(null);
+            setProfile(initialProfile);
+            setNeedsOnboarding(true);
+          }}
+        />
       )}
 
       <TabBar active={tab} language={language} onChange={setTab} />
@@ -414,10 +423,12 @@ function AlertsScreen({
 
 function ProfileScreen({
   profile,
-  onChange
+  onChange,
+  onReset
 }: {
   profile: UserProfile;
   onChange: (profile: UserProfile) => void;
+  onReset: () => void;
 }) {
   const language = profile.language;
 
@@ -425,6 +436,31 @@ function ProfileScreen({
     <ScrollView contentContainerStyle={styles.content}>
       <SectionTitle title={t(language, "profile")} icon="person-outline" />
       <ProfileForm profile={profile} onChange={onChange} />
+      <View style={styles.resetBlock}>
+        <Text style={styles.resetHint}>{t(language, "resetProfileHint")}</Text>
+        <Pressable
+          style={styles.secondaryDangerButton}
+          onPress={() =>
+            Alert.alert(
+              t(language, "resetProfileConfirmTitle"),
+              t(language, "resetProfileConfirmBody"),
+              [
+                { text: t(language, "cancel"), style: "cancel" },
+                {
+                  text: t(language, "resetProfile"),
+                  style: "destructive",
+                  onPress: onReset
+                }
+              ]
+            )
+          }
+        >
+          <Ionicons name="refresh-outline" size={19} color="#8A3A31" />
+          <Text style={styles.secondaryDangerText}>
+            {t(language, "resetProfile")}
+          </Text>
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -1353,6 +1389,33 @@ const styles = StyleSheet.create({
     color: "#16352A",
     fontSize: 15,
     fontWeight: "700"
+  },
+  resetBlock: {
+    marginTop: 4,
+    marginBottom: 24
+  },
+  resetHint: {
+    color: "#52635A",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10
+  },
+  secondaryDangerButton: {
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0B9B2",
+    backgroundColor: "#FFF7F5",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14
+  },
+  secondaryDangerText: {
+    color: "#8A3A31",
+    fontSize: 15,
+    fontWeight: "800"
   },
   choiceWrap: {
     flexDirection: "row",

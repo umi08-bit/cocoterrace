@@ -11,6 +11,13 @@ const dictionaries: Record<Language, Dictionary> = {
     firstProfileBody:
       "ここで選んだ内容は、この端末内に保存されます。あとからプロフィール画面で変更できます。",
     saveAndStart: "保存して始める",
+    resetProfile: "初回設定に戻す",
+    resetProfileHint:
+      "テストや入力し直しをしたい場合は、保存済みプロフィールを削除して初回設定からやり直せます。",
+    resetProfileConfirmTitle: "プロフィールをリセットしますか？",
+    resetProfileConfirmBody:
+      "この端末に保存されたプロフィールを削除し、初回設定画面に戻ります。",
+    cancel: "キャンセル",
     home: "ホーム",
     search: "検索",
     searchPlaceholder: "福祉制度、困りごと、必要書類で検索",
@@ -78,6 +85,13 @@ const dictionaries: Record<Language, Dictionary> = {
     firstProfileBody:
       "Your choices are saved on this device. You can change them later from Profile.",
     saveAndStart: "Save and start",
+    resetProfile: "Reset profile",
+    resetProfileHint:
+      "If you want to test setup again, you can delete the saved profile and return to first setup.",
+    resetProfileConfirmTitle: "Reset your profile?",
+    resetProfileConfirmBody:
+      "The profile saved on this device will be deleted, and the first setup screen will open.",
+    cancel: "Cancel",
     home: "Home",
     search: "Search",
     searchPlaceholder: "Search by welfare support, concern, or document",
