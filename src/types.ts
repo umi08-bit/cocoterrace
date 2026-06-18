@@ -3,11 +3,15 @@ export type Language = "ja" | "en";
 export type MatchLevel = "high" | "needs_check" | "unlikely";
 
 export type Category =
+  | "single_parent"
   | "childcare"
-  | "cash"
+  | "livelihood"
   | "medical"
   | "foreign"
   | "disability"
+  | "caregiving"
+  | "housing"
+  | "emergency"
   | "consultation";
 
 export type UserProfile = {

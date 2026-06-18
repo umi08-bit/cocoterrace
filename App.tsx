@@ -112,6 +112,7 @@ export default function App() {
         <StatusBar style="dark" />
         <View style={styles.loadingScreen}>
           <Text style={styles.appName}>{t(language, "appName")}</Text>
+          <Text style={styles.appTagline}>{t(language, "appTagline")}</Text>
           <Text style={styles.noticeText}>{t(language, "loadingProfile")}</Text>
         </View>
       </SafeAreaView>
@@ -124,6 +125,7 @@ export default function App() {
         <StatusBar style="dark" />
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.appName}>{t(language, "appName")}</Text>
+          <Text style={styles.appTagline}>{t(language, "appTagline")}</Text>
           <Text style={styles.onboardingTitle}>
             {t(language, "firstProfileTitle")}
           </Text>
@@ -173,6 +175,7 @@ export default function App() {
       <View style={styles.header}>
         <View>
           <Text style={styles.appName}>{t(language, "appName")}</Text>
+          <Text style={styles.appTagline}>{t(language, "appTagline")}</Text>
           <Text style={styles.headerSub}>
             {profile.region} / {t(language, profile.household)}
           </Text>
@@ -284,7 +287,16 @@ function SearchScreen({
   onOpen: (program: SupportProgram) => void;
 }) {
   const [query, setQuery] = useState("");
-  const categories = ["childcare", "cash", "medical", "disability", "foreign"] as const;
+  const categories = [
+    "single_parent",
+    "childcare",
+    "livelihood",
+    "disability",
+    "caregiving",
+    "housing",
+    "foreign",
+    "consultation"
+  ] as const;
   const normalizedQuery = normalizeSearchText(query);
 
   return (
@@ -889,7 +901,7 @@ function Pill({ text, tone }: { text: string; tone: MatchLevel | "soft" }) {
 }
 
 function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLevel {
-  if (program.region !== profile.region) return "unlikely";
+  if (!isRegionRelevant(program.region, profile.region)) return "unlikely";
   if (program.tags.includes("disability_support") && !profile.hasDisability) {
     return "unlikely";
   }
@@ -929,6 +941,10 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
   if (score >= 4) return "high";
   if (score >= 2) return "needs_check";
   return "unlikely";
+}
+
+function isRegionRelevant(programRegion: string, userRegion: string) {
+  return programRegion === userRegion || programRegion === "兵庫県";
 }
 
 function matchesSearchQuery(program: SupportProgram, normalizedQuery: string) {
@@ -1076,6 +1092,12 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: "800",
     color: "#16352A"
+  },
+  appTagline: {
+    marginTop: 2,
+    color: "#2E6B4F",
+    fontSize: 13,
+    fontWeight: "800"
   },
   headerSub: {
     marginTop: 3,
