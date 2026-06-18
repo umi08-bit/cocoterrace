@@ -387,7 +387,7 @@ function SearchScreen({
     .filter((program) => matchesSearchQuery(program, normalizedQuery))
     .map((program) => ({
       program,
-      match: getMatchLevel(program, profile)
+      match: getConcernSearchMatchLevel(program, profile, selectedConcern)
     }))
     .filter((item) => item.match !== "unlikely")
     .sort((a, b) => matchRank(a.match) - matchRank(b.match));
@@ -1104,6 +1104,33 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
 
   if (score >= 4) return "high";
   if (score >= 2) return "needs_check";
+  return "unlikely";
+}
+
+function getConcernSearchMatchLevel(
+  program: SupportProgram,
+  profile: UserProfile,
+  selectedConcern: ConcernId
+): MatchLevel {
+  const match = getMatchLevel(program, profile);
+  if (match !== "unlikely") return match;
+  if (!isRegionRelevant(program.region, profile.region)) return "unlikely";
+
+  if (
+    selectedConcern === "disability" &&
+    program.tags.includes("disability_support")
+  ) {
+    return "needs_check";
+  }
+
+  if (
+    selectedConcern === "foreign" &&
+    (program.tags.includes("foreign_resident") ||
+      program.tags.includes("language_support"))
+  ) {
+    return "needs_check";
+  }
+
   return "unlikely";
 }
 
