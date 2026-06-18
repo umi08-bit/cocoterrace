@@ -20,7 +20,81 @@ import { categoryLabel, matchLabel, t } from "./src/i18n";
 import { Language, MatchLevel, SupportProgram, UserProfile } from "./src/types";
 
 type Tab = "home" | "search" | "alerts" | "profile";
+type ConcernId =
+  | "money"
+  | "housing"
+  | "school"
+  | "single_parent"
+  | "disability"
+  | "caregiving"
+  | "foreign"
+  | "urgent";
 const PROFILE_STORAGE_KEY = "cocoterrace:user-profile:v1";
+
+const concernCards: {
+  id: ConcernId;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  tags: string[];
+  categories: string[];
+}[] = [
+  {
+    id: "money",
+    icon: "wallet-outline",
+    color: "#2E6B4F",
+    tags: ["low_income", "cash_benefit", "loan"],
+    categories: ["livelihood", "single_parent", "disability"]
+  },
+  {
+    id: "housing",
+    icon: "home-outline",
+    color: "#486E8C",
+    tags: ["housing", "rent"],
+    categories: ["housing", "single_parent", "consultation"]
+  },
+  {
+    id: "school",
+    icon: "school-outline",
+    color: "#7C5B2E",
+    tags: ["school", "education", "child_support"],
+    categories: ["childcare", "single_parent"]
+  },
+  {
+    id: "single_parent",
+    icon: "people-outline",
+    color: "#8A5A5A",
+    tags: ["single_parent"],
+    categories: ["single_parent"]
+  },
+  {
+    id: "disability",
+    icon: "accessibility-outline",
+    color: "#655E9B",
+    tags: ["disability_support"],
+    categories: ["disability"]
+  },
+  {
+    id: "caregiving",
+    icon: "medkit-outline",
+    color: "#5F7D5B",
+    tags: ["caregiving"],
+    categories: ["caregiving", "disability"]
+  },
+  {
+    id: "foreign",
+    icon: "language-outline",
+    color: "#3E6F75",
+    tags: ["foreign_resident", "language_support"],
+    categories: ["foreign"]
+  },
+  {
+    id: "urgent",
+    icon: "call-outline",
+    color: "#8A3A31",
+    tags: ["consultation", "emergency"],
+    categories: ["consultation", "emergency"]
+  }
+];
 
 const initialProfile: UserProfile = {
   region: "神戸市",
@@ -296,21 +370,65 @@ function SearchScreen({
   onOpen: (program: SupportProgram) => void;
 }) {
   const [query, setQuery] = useState("");
-  const categories = [
-    "single_parent",
-    "childcare",
-    "livelihood",
-    "disability",
-    "caregiving",
-    "housing",
-    "foreign",
-    "consultation"
-  ] as const;
+  const [selectedConcern, setSelectedConcern] = useState<ConcernId>("money");
   const normalizedQuery = normalizeSearchText(query);
+  const selectedConcernCard = concernCards.find(
+    (concern) => concern.id === selectedConcern
+  );
+  const results = supportPrograms
+    .filter((program) => matchesConcern(program, selectedConcernCard))
+    .filter((program) => matchesSearchQuery(program, normalizedQuery))
+    .map((program) => ({
+      program,
+      match: getMatchLevel(program, profile)
+    }))
+    .filter((item) => item.match !== "unlikely")
+    .sort((a, b) => matchRank(a.match) - matchRank(b.match));
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SectionTitle title={t(language, "search")} icon="search-outline" />
+      <SectionTitle title={t(language, "concernSearch")} icon="compass-outline" />
+      <View style={styles.concernGrid}>
+        {concernCards.map((concern) => {
+          const active = concern.id === selectedConcern;
+          return (
+            <Pressable
+              key={concern.id}
+              style={[
+                styles.concernCard,
+                active && [
+                  styles.concernCardActive,
+                  { borderColor: concern.color }
+                ]
+              ]}
+              onPress={() => setSelectedConcern(concern.id)}
+            >
+              <View
+                style={[
+                  styles.concernIcon,
+                  { backgroundColor: active ? concern.color : "#EAF1EC" }
+                ]}
+              >
+                <Ionicons
+                  name={concern.icon}
+                  size={21}
+                  color={active ? "#FFFFFF" : concern.color}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.concernTitle,
+                  active && { color: concern.color }
+                ]}
+              >
+                {t(language, `concern_${concern.id}`)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <SectionTitle title={t(language, "filterByKeyword")} icon="search-outline" />
       <View style={styles.searchBox}>
         <Ionicons name="search-outline" size={20} color="#52635A" />
         <TextInput
@@ -327,35 +445,30 @@ function SearchScreen({
           </Pressable>
         )}
       </View>
-      {categories.map((category) => {
-        const items = supportPrograms
-          .filter((program) => program.category === category)
-          .filter((program) => matchesSearchQuery(program, normalizedQuery))
-          .map((program) => ({
-            program,
-            match: getMatchLevel(program, profile)
-          }))
-          .filter((item) => item.match !== "unlikely");
-        return (
-          <View key={category} style={styles.group}>
-            <Text style={styles.groupTitle}>{categoryLabel(language, category)}</Text>
-            {items.length > 0 ? (
-              items.map(({ program, match }) => (
-                <ProgramCard
-                  key={program.id}
-                  language={language}
-                  program={program}
-                  match={match}
-                  compact
-                  onOpen={() => onOpen(program)}
-                />
-              ))
-            ) : (
-              <EmptyState text={t(language, "noMatchingPrograms")} compact />
-            )}
-          </View>
-        );
-      })}
+
+      <View style={styles.group}>
+        <Text style={styles.groupTitle}>
+          {t(language, "concernResultTitle")}・
+          {t(language, `concern_${selectedConcern}`)}
+        </Text>
+        <Text style={styles.groupDescription}>
+          {t(language, `concern_${selectedConcern}_hint`)}
+        </Text>
+        {results.length > 0 ? (
+          results.map(({ program, match }) => (
+            <ProgramCard
+              key={program.id}
+              language={language}
+              program={program}
+              match={match}
+              compact
+              onOpen={() => onOpen(program)}
+            />
+          ))
+        ) : (
+          <EmptyState text={t(language, "noMatchingPrograms")} compact />
+        )}
+      </View>
     </ScrollView>
   );
 }
@@ -1011,6 +1124,29 @@ function matchesSearchQuery(program: SupportProgram, normalizedQuery: string) {
     .every((word) => searchableText.includes(word));
 }
 
+function matchesConcern(
+  program: SupportProgram,
+  concern:
+    | {
+        tags: string[];
+        categories: string[];
+      }
+    | undefined
+) {
+  if (!concern) return true;
+
+  return (
+    concern.categories.includes(program.category) ||
+    concern.tags.some((tag) => program.tags.includes(tag))
+  );
+}
+
+function matchRank(match: MatchLevel) {
+  if (match === "high") return 0;
+  if (match === "needs_check") return 1;
+  return 2;
+}
+
 function normalizeSearchText(text: string) {
   return text.trim().toLowerCase().normalize("NFKC");
 }
@@ -1239,6 +1375,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  concernGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 18
+  },
+  concernCard: {
+    width: "48%",
+    minHeight: 92,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    backgroundColor: "#FFFFFF",
+    padding: 12,
+    justifyContent: "space-between"
+  },
+  concernCardActive: {
+    backgroundColor: "#F7FBF8",
+    borderWidth: 2
+  },
+  concernIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10
+  },
+  concernTitle: {
+    color: "#16352A",
+    fontSize: 14,
+    lineHeight: 19,
+    fontWeight: "800"
+  },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
@@ -1297,6 +1467,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2E6B4F",
     marginBottom: 8
+  },
+  groupDescription: {
+    color: "#52635A",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10
   },
   emptyState: {
     minHeight: 74,

@@ -7,7 +7,7 @@ const dictionaries: Record<Language, Dictionary> = {
     appName: "ココロテラス",
     appTagline: "兵庫県の福祉支援ナビ",
     loadingProfile: "プロフィールを読み込んでいます。",
-    firstProfileTitle: "最初にプロフィールを設定します",
+    firstProfileTitle: "最初にプロフィールを設定しましょう",
     firstProfileBody:
       "ここで選んだ内容は、この端末内に保存されます。あとからプロフィール画面で変更できます。",
     saveAndStart: "保存して始める",
@@ -20,7 +20,34 @@ const dictionaries: Record<Language, Dictionary> = {
     cancel: "キャンセル",
     home: "ホーム",
     search: "検索",
-    searchPlaceholder: "福祉制度、困りごと、必要書類で検索",
+    concernSearch: "困りごとから探す",
+    filterByKeyword: "キーワードでしぼる",
+    concernResultTitle: "関係ありそうな支援",
+    searchPlaceholder: "制度名、困りごと、必要書類でしぼる",
+    concern_money: "お金が足りない",
+    concern_money_hint:
+      "手当、給付、貸付、生活相談など、お金の不安に関係する支援を表示します。",
+    concern_housing: "家賃・住まい",
+    concern_housing_hint:
+      "家賃、転居、住宅、生活の場所に関係する支援を表示します。",
+    concern_school: "子どもの学校費用",
+    concern_school_hint:
+      "就学、進学、学費、子どもの学びに関係する支援を表示します。",
+    concern_single_parent: "ひとり親",
+    concern_single_parent_hint:
+      "ひとり親家庭向けの相談、手当、仕事、住まい、子育て支援を表示します。",
+    concern_disability: "障がい",
+    concern_disability_hint:
+      "障がいのある本人、子ども、家族に関係する手当や相談を表示します。",
+    concern_caregiving: "介護",
+    concern_caregiving_hint:
+      "介護や家族のケアに関係する支援を表示します。",
+    concern_foreign: "外国語で相談したい",
+    concern_foreign_hint:
+      "外国人住民向けの生活情報、多言語相談、手続きの案内を表示します。",
+    concern_urgent: "今すぐ相談したい",
+    concern_urgent_hint:
+      "生活、DV、子育て、住まいなど、まず相談できる窓口を表示します。",
     alerts: "通知",
     profile: "プロフィール",
     likelySupport: "関係ありそうな福祉支援",
@@ -36,7 +63,7 @@ const dictionaries: Record<Language, Dictionary> = {
     single_parent: "ひとり親",
     childcare: "子育て福祉",
     livelihood: "生活に困ったとき",
-    medical: "医療・福祉",
+    medical: "医療の福祉",
     foreign: "外国人向け",
     disability: "障がい",
     caregiving: "介護",
@@ -50,7 +77,8 @@ const dictionaries: Record<Language, Dictionary> = {
     documents: "必要書類",
     apply: "申請方法",
     officialSite: "公式ページを開く",
-    aiNotice: "AI要約の想定表示です。公開前に公式情報の確認が必要です。",
+    aiNotice:
+      "AIによる簡単な要約です。申請前に必ず公式情報を確認してください。",
     region: "居住地域",
     household: "家族構成",
     children: "子ども",
@@ -75,7 +103,8 @@ const dictionaries: Record<Language, Dictionary> = {
     reminderSet: "通知の準備をしました",
     noDeadline: "随時",
     source: "情報元",
-    privacy: "保存する情報は最小限にし、いつでも削除できる設計にします。"
+    privacy:
+      "保存する情報は最小限にし、いつでも削除できる設計にします。"
   },
   en: {
     appName: "Cocoterrace",
@@ -94,7 +123,34 @@ const dictionaries: Record<Language, Dictionary> = {
     cancel: "Cancel",
     home: "Home",
     search: "Search",
-    searchPlaceholder: "Search by welfare support, concern, or document",
+    concernSearch: "Search by concern",
+    filterByKeyword: "Filter by keyword",
+    concernResultTitle: "Support that may help",
+    searchPlaceholder: "Filter by program, concern, or document",
+    concern_money: "Not enough money",
+    concern_money_hint:
+      "Shows allowances, benefits, loans, and consultation related to money worries.",
+    concern_housing: "Rent and housing",
+    concern_housing_hint:
+      "Shows support related to rent, moving, housing, and a safe place to live.",
+    concern_school: "School costs",
+    concern_school_hint:
+      "Shows support related to school, education, tuition, and children's learning.",
+    concern_single_parent: "Single parent",
+    concern_single_parent_hint:
+      "Shows consultation, allowances, work, housing, and childcare support for single-parent households.",
+    concern_disability: "Disability",
+    concern_disability_hint:
+      "Shows benefits and consultation for people, children, and families related to disability.",
+    concern_caregiving: "Caregiving",
+    concern_caregiving_hint:
+      "Shows support related to caregiving and family care.",
+    concern_foreign: "Consult in another language",
+    concern_foreign_hint:
+      "Shows multilingual consultation, living information, and procedure guidance for foreign residents.",
+    concern_urgent: "Need help now",
+    concern_urgent_hint:
+      "Shows public counters for urgent consultation about living, DV, childcare, and housing.",
     alerts: "Alerts",
     profile: "Profile",
     likelySupport: "Welfare support that may fit you",
@@ -124,7 +180,8 @@ const dictionaries: Record<Language, Dictionary> = {
     documents: "Documents",
     apply: "How to apply",
     officialSite: "Open official page",
-    aiNotice: "Draft AI summary. Official information must be checked before release.",
+    aiNotice:
+      "Draft AI summary. Official information must be checked before applying.",
     region: "Region",
     household: "Household",
     children: "Children",
@@ -143,13 +200,14 @@ const dictionaries: Record<Language, Dictionary> = {
     single: "Single",
     yes: "Yes",
     no: "No",
-    ja: "日本語",
+    ja: "Japanese",
     en: "English",
     reminder: "Try deadline reminder",
     reminderSet: "Reminder is ready",
     noDeadline: "Anytime",
     source: "Source",
-    privacy: "Only minimum data should be stored, and users can delete it anytime."
+    privacy:
+      "Only minimum data should be stored, and users can delete it anytime."
   }
 };
 
