@@ -5,8 +5,14 @@ type Dictionary = Record<string, string>;
 const dictionaries: Record<Language, Dictionary> = {
   ja: {
     appName: "ココロテラス",
+    loadingProfile: "プロフィールを読み込んでいます。",
+    firstProfileTitle: "最初にプロフィールを設定します",
+    firstProfileBody:
+      "ここで選んだ内容は、この端末内に保存されます。あとからプロフィール画面で変更できます。",
+    saveAndStart: "保存して始める",
     home: "ホーム",
     search: "検索",
+    searchPlaceholder: "制度名、条件、必要書類で検索",
     alerts: "通知",
     profile: "プロフィール",
     likelySupport: "関係ありそうな支援",
@@ -62,8 +68,14 @@ const dictionaries: Record<Language, Dictionary> = {
   },
   en: {
     appName: "Cocoterrace",
+    loadingProfile: "Loading your profile.",
+    firstProfileTitle: "Set up your profile first",
+    firstProfileBody:
+      "Your choices are saved on this device. You can change them later from Profile.",
+    saveAndStart: "Save and start",
     home: "Home",
     search: "Search",
+    searchPlaceholder: "Search by program, condition, or document",
     alerts: "Alerts",
     profile: "Profile",
     likelySupport: "Support that may fit you",

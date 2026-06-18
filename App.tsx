@@ -1,8 +1,9 @@
 ﻿import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -11,6 +12,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   View
 } from "react-native";
 import { supportPrograms } from "./src/data/programs";
@@ -18,6 +20,7 @@ import { categoryLabel, matchLabel, t } from "./src/i18n";
 import { Language, MatchLevel, SupportProgram, UserProfile } from "./src/types";
 
 type Tab = "home" | "search" | "alerts" | "profile";
+const PROFILE_STORAGE_KEY = "cocoterrace:user-profile:v1";
 
 const initialProfile: UserProfile = {
   region: "神戸市",
@@ -43,10 +46,53 @@ Notifications.setNotificationHandler({
 export default function App() {
   const [tab, setTab] = useState<Tab>("home");
   const [profile, setProfile] = useState<UserProfile>(initialProfile);
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [selectedProgram, setSelectedProgram] = useState<SupportProgram | null>(
     null
   );
   const language = profile.language;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      try {
+        const savedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+        if (!isMounted) return;
+
+        if (savedProfile) {
+          const parsedProfile = JSON.parse(savedProfile) as Partial<UserProfile>;
+          setProfile(normalizeProfile({ ...initialProfile, ...parsedProfile }));
+          setNeedsOnboarding(false);
+        } else {
+          setNeedsOnboarding(true);
+        }
+      } catch {
+        if (isMounted) {
+          setNeedsOnboarding(true);
+        }
+      } finally {
+        if (isMounted) {
+          setHasLoadedProfile(true);
+        }
+      }
+    }
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedProfile || needsOnboarding) return;
+
+    AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile)).catch(() => {
+      // 保存できない場合でも、画面操作は続けられるようにします。
+    });
+  }, [hasLoadedProfile, needsOnboarding, profile]);
 
   const matchedPrograms = useMemo(
     () =>
@@ -59,6 +105,56 @@ export default function App() {
         .sort((a, b) => scoreMatch(b.match) - scoreMatch(a.match)),
     [profile]
   );
+
+  if (!hasLoadedProfile) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <StatusBar style="dark" />
+        <View style={styles.loadingScreen}>
+          <Text style={styles.appName}>{t(language, "appName")}</Text>
+          <Text style={styles.noticeText}>{t(language, "loadingProfile")}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (needsOnboarding) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <StatusBar style="dark" />
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.appName}>{t(language, "appName")}</Text>
+          <Text style={styles.onboardingTitle}>
+            {t(language, "firstProfileTitle")}
+          </Text>
+          <Text style={styles.onboardingBody}>
+            {t(language, "firstProfileBody")}
+          </Text>
+          <ProfileForm
+            profile={profile}
+            onChange={(next) => setProfile(normalizeProfile(next))}
+          />
+          <Pressable
+            style={styles.primaryButton}
+            onPress={async () => {
+              const normalized = normalizeProfile(profile);
+              setProfile(normalized);
+              await AsyncStorage.setItem(
+                PROFILE_STORAGE_KEY,
+                JSON.stringify(normalized)
+              );
+              setNeedsOnboarding(false);
+            }}
+          >
+            <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>
+              {t(language, "saveAndStart")}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (selectedProgram) {
     return (
@@ -187,14 +283,33 @@ function SearchScreen({
   profile: UserProfile;
   onOpen: (program: SupportProgram) => void;
 }) {
+  const [query, setQuery] = useState("");
   const categories = ["childcare", "cash", "medical", "disability", "foreign"] as const;
+  const normalizedQuery = normalizeSearchText(query);
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <SectionTitle title={t(language, "search")} icon="search-outline" />
+      <View style={styles.searchBox}>
+        <Ionicons name="search-outline" size={20} color="#52635A" />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t(language, "searchPlaceholder")}
+          placeholderTextColor="#7A8780"
+          style={styles.searchInput}
+          returnKeyType="search"
+        />
+        {query.length > 0 && (
+          <Pressable style={styles.clearButton} onPress={() => setQuery("")}>
+            <Ionicons name="close" size={18} color="#52635A" />
+          </Pressable>
+        )}
+      </View>
       {categories.map((category) => {
         const items = supportPrograms
           .filter((program) => program.category === category)
+          .filter((program) => matchesSearchQuery(program, normalizedQuery))
           .map((program) => ({
             program,
             match: getMatchLevel(program, profile)
@@ -297,6 +412,22 @@ function ProfileScreen({
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <SectionTitle title={t(language, "profile")} icon="person-outline" />
+      <ProfileForm profile={profile} onChange={onChange} />
+    </ScrollView>
+  );
+}
+
+function ProfileForm({
+  profile,
+  onChange
+}: {
+  profile: UserProfile;
+  onChange: (profile: UserProfile) => void;
+}) {
+  const language = profile.language;
+
+  return (
+    <>
       <ProfileRow label={t(language, "region")} value={profile.region} />
       <ChoiceRow
         label={t(language, "household")}
@@ -390,7 +521,7 @@ function ProfileScreen({
         <Ionicons name="lock-closed-outline" size={20} color="#2E6B4F" />
         <Text style={styles.noticeText}>{t(language, "privacy")}</Text>
       </View>
-    </ScrollView>
+    </>
   );
 }
 
@@ -800,6 +931,38 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
   return "unlikely";
 }
 
+function matchesSearchQuery(program: SupportProgram, normalizedQuery: string) {
+  if (!normalizedQuery) return true;
+
+  const searchableText = normalizeSearchText(
+    [
+      program.titleJa,
+      program.titleEn,
+      program.summaryJa,
+      program.summaryEn,
+      program.eligibilityJa,
+      program.eligibilityEn,
+      program.benefitJa,
+      program.benefitEn,
+      program.applicationMethodJa,
+      program.applicationMethodEn,
+      program.requiredDocumentsJa.join(" "),
+      program.requiredDocumentsEn.join(" "),
+      program.organization,
+      program.tags.join(" ")
+    ].join(" ")
+  );
+
+  return normalizedQuery
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((word) => searchableText.includes(word));
+}
+
+function normalizeSearchText(text: string) {
+  return text.trim().toLowerCase().normalize("NFKC");
+}
+
 function formatProfileSummary(profile: UserProfile, language: Language) {
   const childText = profile.hasChildren
     ? `${t(language, "children")} ${profile.childrenCount >= 6 ? "6+" : profile.childrenCount}`
@@ -924,6 +1087,27 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 110
   },
+  loadingScreen: {
+    flex: 1,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12
+  },
+  onboardingTitle: {
+    marginTop: 18,
+    marginBottom: 8,
+    fontSize: 22,
+    lineHeight: 29,
+    fontWeight: "900",
+    color: "#16352A"
+  },
+  onboardingBody: {
+    color: "#52635A",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 18
+  },
   noticeBand: {
     padding: 14,
     borderRadius: 8,
@@ -970,6 +1154,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     color: "#16352A"
+  },
+  searchBox: {
+    minHeight: 50,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#CED8D0",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 48,
+    color: "#16352A",
+    fontSize: 15
+  },
+  clearButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "#EAF1EC",
+    alignItems: "center",
+    justifyContent: "center"
   },
   card: {
     backgroundColor: "#FFFFFF",
