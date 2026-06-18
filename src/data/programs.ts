@@ -158,17 +158,18 @@ const cityConfigs: CityConfig[] = [
     nameJa: "明石市",
     nameEn: "Akashi City",
     urls: {
-      childcare:
-        "https://www.city.akashi.lg.jp/shimin_kenkou/kenkou_ka/kenko/kenko/bosi_houkatu.html",
-      singleParent: "https://www.city.akashi.lg.jp/kosodate/hitorioya/index.html",
-      disability: "https://www.city.akashi.lg.jp/fukushi/shougai/index.html",
-      livelihood: "https://www.city.akashi.lg.jp/fukushi/seikatsu/index.html",
+      childcare: "https://www.city.akashi.lg.jp/kodomo-kyoiku/index.html",
+      singleParent:
+        "https://www.city.akashi.lg.jp/kodomo/jidou_fu_ka/kodomo-kyoiku/kosodate/hitorioya/hitorioya.html",
+      disability: "https://www.city.akashi.lg.jp/kenko/shogaisha/jose/index.html",
+      livelihood: "https://www.city.akashi.lg.jp/kenko/index.html",
       housing: "https://www.city.akashi.lg.jp/kurashi/sumai/index.html",
-      medical: "https://www.city.akashi.lg.jp/kenko/kenko/index.html",
-      caregiving: "https://www.city.akashi.lg.jp/fukushi/kaigo/index.html",
-      foreign: "https://www.city.akashi.lg.jp/community/s_kyoudou_shitsu/foreigners.html",
+      medical: "https://www.city.akashi.lg.jp/shimin_kenkou/chouju_ka/kenko/kenko/jose.html",
+      caregiving: "https://www.city.akashi.lg.jp/fukushi/k_kaigo_shitsu/kaigohoken/top2022.html",
+      foreign: "https://www.city.akashi.lg.jp/fl/index.html",
       urgent: "https://www.city.akashi.lg.jp/kurashi/sodan/index.html",
-      school: "https://www.city.akashi.lg.jp/kosodate/education/index.html"
+      school:
+        "https://www.city.akashi.lg.jp/kyouiku/ed_gakuji_ka/kodomo-kyoiku/kyoiku/hojokin.html"
     }
   },
   {
