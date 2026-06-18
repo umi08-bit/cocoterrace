@@ -3,7 +3,7 @@ node_modules/
 .npm-cache/
 .home/
 dist/
-dist-check/
+dist-check*/
 web-build/
 expo-server.log
 expo-server.err.log

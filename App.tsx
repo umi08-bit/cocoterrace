@@ -135,19 +135,32 @@ function HomeScreen({
         <Text style={styles.noticeText}>{t(language, "officialCheck")}</Text>
       </View>
 
+      <View style={styles.profileSummary}>
+        <Text style={styles.profileSummaryLabel}>
+          {t(language, "profileConditions")}
+        </Text>
+        <Text style={styles.profileSummaryText}>
+          {formatProfileSummary(profile, language)}
+        </Text>
+      </View>
+
       <SectionTitle
         title={t(language, "likelySupport")}
         icon="sparkles-outline"
       />
-      {programs.map(({ program, match }) => (
-        <ProgramCard
-          key={program.id}
-          language={language}
-          program={program}
-          match={match}
-          onOpen={() => onOpen(program)}
-        />
-      ))}
+      {programs.length > 0 ? (
+        programs.map(({ program, match }) => (
+          <ProgramCard
+            key={program.id}
+            language={language}
+            program={program}
+            match={match}
+            onOpen={() => onOpen(program)}
+          />
+        ))
+      ) : (
+        <EmptyState text={t(language, "noMatchingPrograms")} />
+      )}
 
       <SectionTitle title={t(language, "deadlineSoon")} icon="time-outline" />
       {urgent.map(({ program, match }) => (
@@ -179,20 +192,30 @@ function SearchScreen({
     <ScrollView contentContainerStyle={styles.content}>
       <SectionTitle title={t(language, "search")} icon="search-outline" />
       {categories.map((category) => {
-        const items = supportPrograms.filter((program) => program.category === category);
+        const items = supportPrograms
+          .filter((program) => program.category === category)
+          .map((program) => ({
+            program,
+            match: getMatchLevel(program, profile)
+          }))
+          .filter((item) => item.match !== "unlikely");
         return (
           <View key={category} style={styles.group}>
             <Text style={styles.groupTitle}>{categoryLabel(language, category)}</Text>
-            {items.map((program) => (
-              <ProgramCard
-                key={program.id}
-                language={language}
-                program={program}
-                match={getMatchLevel(program, profile)}
-                compact
-                onOpen={() => onOpen(program)}
-              />
-            ))}
+            {items.length > 0 ? (
+              items.map(({ program, match }) => (
+                <ProgramCard
+                  key={program.id}
+                  language={language}
+                  program={program}
+                  match={match}
+                  compact
+                  onOpen={() => onOpen(program)}
+                />
+              ))
+            ) : (
+              <EmptyState text={t(language, "noMatchingPrograms")} compact />
+            )}
           </View>
         );
       })}
@@ -600,6 +623,15 @@ function ToggleRow({
   );
 }
 
+function EmptyState({ text, compact }: { text: string; compact?: boolean }) {
+  return (
+    <View style={[styles.emptyState, compact && styles.emptyStateCompact]}>
+      <Ionicons name="search-outline" size={20} color="#6A766F" />
+      <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
 function CountRow({
   label,
   value,
@@ -689,8 +721,21 @@ function Pill({ text, tone }: { text: string; tone: MatchLevel | "soft" }) {
 
 function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLevel {
   if (program.region !== profile.region) return "unlikely";
+  if (program.tags.includes("foreign_resident") && !profile.wantsForeignSupport) {
+    return "unlikely";
+  }
+  if (program.tags.includes("single_parent") && profile.household !== "single_parent") {
+    return "unlikely";
+  }
+  if (
+    program.tags.includes("child_support") &&
+    (!profile.hasChildren || profile.childrenCount === 0)
+  ) {
+    return "unlikely";
+  }
 
   let score = 1;
+  if (program.tags.includes("general_support")) score += 1;
   if (
     profile.hasChildren &&
     profile.childrenCount > 0 &&
@@ -709,6 +754,17 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
   if (score >= 4) return "high";
   if (score >= 2) return "needs_check";
   return "unlikely";
+}
+
+function formatProfileSummary(profile: UserProfile, language: Language) {
+  const childText = profile.hasChildren
+    ? `${t(language, "children")} ${profile.childrenCount >= 6 ? "6+" : profile.childrenCount}`
+    : t(language, "noChildren");
+  const foreignText = profile.wantsForeignSupport
+    ? t(language, "foreignSupportOn")
+    : t(language, "foreignSupportOff");
+
+  return `${profile.region} / ${t(language, profile.household)} / ${childText} / ${foreignText}`;
 }
 
 function syncChildrenAges(currentAges: number[], nextCount: number) {
@@ -793,6 +849,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20
   },
+  profileSummary: {
+    padding: 14,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E0E7E2",
+    marginBottom: 18
+  },
+  profileSummaryLabel: {
+    color: "#2E6B4F",
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 5
+  },
+  profileSummaryText: {
+    color: "#16352A",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "700"
+  },
   sectionTitle: {
     flexDirection: "row",
     alignItems: "center",
@@ -863,6 +939,27 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#2E6B4F",
     marginBottom: 8
+  },
+  emptyState: {
+    minHeight: 74,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    backgroundColor: "#F0F5F1",
+    padding: 14,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10
+  },
+  emptyStateCompact: {
+    minHeight: 58
+  },
+  emptyText: {
+    flex: 1,
+    color: "#52635A",
+    fontSize: 14,
+    lineHeight: 20
   },
   alertRow: {
     backgroundColor: "#FFFFFF",

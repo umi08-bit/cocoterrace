@@ -56,7 +56,7 @@ export const supportPrograms: SupportProgram[] = [
     applicationMethodJa: "スマートこうべの個人向けページから条件に合う制度を検索します。",
     applicationMethodEn:
       "Use the Smart Kobe individual support page to search for matching programs.",
-    tags: ["consultation", "child_support", "housing", "medical_subsidy"],
+    tags: ["general_support", "consultation", "housing", "medical_subsidy"],
     updatedAt: "2026-06-18"
   },
   {
