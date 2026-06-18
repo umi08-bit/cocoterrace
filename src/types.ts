@@ -12,7 +12,7 @@ export type Category =
 
 export type UserProfile = {
   region: string;
-  household: "single_parent" | "two_parent" | "single" | "other";
+  household: "single_parent" | "two_parent" | "single";
   hasChildren: boolean;
   childrenCount: number;
   childrenAges: number[];

@@ -300,7 +300,7 @@ function ProfileScreen({
       <ProfileRow label={t(language, "region")} value={profile.region} />
       <ChoiceRow
         label={t(language, "household")}
-        choices={["single_parent", "two_parent", "single", "other"]}
+        choices={["single_parent", "two_parent", "single"]}
         value={profile.household}
         language={language}
         onChange={(household) =>
@@ -337,7 +337,10 @@ function ProfileScreen({
         onChange={(hasChildren) =>
           onChange(normalizeProfile({
             ...profile,
-            household: hasChildren ? profile.household : "single",
+            household: resolveHouseholdAfterChildrenToggle(
+              profile.household,
+              hasChildren
+            ),
             hasChildren,
             childrenCount: hasChildren ? Math.max(profile.childrenCount, 1) : 0,
             childrenAges: hasChildren ? profile.childrenAges : []
@@ -840,6 +843,18 @@ function normalizeProfile(profile: UserProfile): UserProfile {
   }
 
   return next;
+}
+
+function resolveHouseholdAfterChildrenToggle(
+  household: UserProfile["household"],
+  hasChildren: boolean
+): UserProfile["household"] {
+  if (hasChildren) {
+    return household === "single" ? "single_parent" : household;
+  }
+
+  if (household === "single_parent") return "single";
+  return household;
 }
 
 function syncChildrenAges(currentAges: number[], nextCount: number) {
