@@ -18,7 +18,13 @@ import {
 import { supportPrograms as localSupportPrograms } from "./src/data/programs";
 import { categoryLabel, matchLabel, t } from "./src/i18n";
 import { fetchSupportProgramsFromFirestore } from "./src/services/supportPrograms";
-import { Language, MatchLevel, SupportProgram, UserProfile } from "./src/types";
+import {
+  Language,
+  MatchLevel,
+  NotificationFrequency,
+  SupportProgram,
+  UserProfile
+} from "./src/types";
 
 type Tab = "home" | "search" | "alerts" | "profile";
 type ProgramDataSource = "loading" | "cloud" | "local";
@@ -114,7 +120,8 @@ const initialProfile: UserProfile = {
   hasDisability: false,
   wantsForeignSupport: true,
   language: "ja",
-  notificationsEnabled: true
+  notificationsEnabled: true,
+  notificationFrequency: "daily"
 };
 
 Notifications.setNotificationHandler({
@@ -324,7 +331,9 @@ export default function App() {
         <AlertsScreen
           language={language}
           profile={profile}
-          programs={matchedPrograms.map((item) => item.program)}
+          programs={matchedPrograms}
+          onChangeProfile={setProfile}
+          onOpen={setSelectedProgram}
         />
       )}
       {tab === "profile" && (
@@ -524,60 +533,133 @@ function SearchScreen({
 function AlertsScreen({
   language,
   profile,
-  programs
+  programs,
+  onChangeProfile,
+  onOpen
 }: {
   language: Language;
   profile: UserProfile;
-  programs: SupportProgram[];
+  programs: { program: SupportProgram; match: MatchLevel }[];
+  onChangeProfile: (profile: UserProfile) => void;
+  onOpen: (program: SupportProgram) => void;
 }) {
-  const deadlineItems = programs.filter((program) => isDeadlineSoon(program.deadline));
+  const likelyCount = programs.length;
+  const highCount = programs.filter((item) => item.match === "high").length;
+  const deadlineItems = programs.filter((item) => isDeadlineSoon(item.program.deadline));
+  const previewPrograms = programs.slice(0, 3);
 
-  async function scheduleReminder(program: SupportProgram) {
-    if (!profile.notificationsEnabled) {
-      Alert.alert(t(language, "notifications"), t(language, "no"));
+  async function scheduleSupportSummary(frequency: NotificationFrequency) {
+    const nextProfile = normalizeProfile({
+      ...profile,
+      notificationsEnabled: frequency !== "off",
+      notificationFrequency: frequency
+    });
+    onChangeProfile(nextProfile);
+
+    await Notifications.cancelAllScheduledNotificationsAsync();
+
+    if (frequency === "off") {
+      Alert.alert(t(language, "notifications"), t(language, "notificationOffMessage"));
       return;
     }
 
     const permission = await Notifications.requestPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(t(language, "notifications"), "Permission is required.");
+      Alert.alert(t(language, "notifications"), t(language, "notificationPermissionNeeded"));
       return;
     }
 
+    const seconds = frequency === "daily" ? 60 * 60 * 24 : 60 * 60 * 24 * 7;
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: language === "ja" ? program.titleJa : program.titleEn,
-        body: t(language, "officialCheck")
+        title: t(language, "supportNotificationTitle"),
+        body: formatSupportNotificationBody(language, likelyCount, highCount)
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: 5
+        seconds,
+        repeats: true
       }
     });
-    Alert.alert(t(language, "reminderSet"), t(language, "officialCheck"));
+
+    Alert.alert(
+      t(language, "notificationScheduleSaved"),
+      formatSupportNotificationBody(language, likelyCount, highCount)
+    );
   }
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <SectionTitle title={t(language, "newInfo")} icon="notifications-outline" />
-      {programs.map((program) => (
-        <AlertRow
-          key={program.id}
-          language={language}
-          program={program}
-          onReminder={() => scheduleReminder(program)}
-        />
-      ))}
+      <SectionTitle title={t(language, "personalNotificationSettings")} icon="notifications-outline" />
+      <View style={styles.notificationSummary}>
+        <View style={styles.notificationIcon}>
+          <Ionicons name="sparkles-outline" size={25} color="#FFFFFF" />
+        </View>
+        <View style={styles.notificationSummaryText}>
+          <Text style={styles.notificationCount}>
+            {likelyCount}
+            <Text style={styles.notificationCountUnit}>
+              {t(language, "supportCountUnit")}
+            </Text>
+          </Text>
+          <Text style={styles.notificationBody}>
+            {formatSupportNotificationBody(language, likelyCount, highCount)}
+          </Text>
+        </View>
+      </View>
+
+      <ChoiceRow
+        label={t(language, "notificationFrequency")}
+        choices={["daily", "weekly", "off"] as const}
+        value={profile.notificationFrequency}
+        language={language}
+        onChange={scheduleSupportSummary}
+      />
+
+      <View style={styles.noticeBand}>
+        <Ionicons name="information-circle-outline" size={21} color="#2E6B4F" />
+        <Text style={styles.noticeText}>{t(language, "notificationExplanation")}</Text>
+      </View>
+
+      <SectionTitle title={t(language, "notificationPreview")} icon="mail-unread-outline" />
+      <View style={styles.previewCard}>
+        <Text style={styles.previewTitle}>{t(language, "supportNotificationTitle")}</Text>
+        <Text style={styles.previewBody}>
+          {formatSupportNotificationBody(language, likelyCount, highCount)}
+        </Text>
+      </View>
+
+      <SectionTitle title={t(language, "likelySupport")} icon="sparkles-outline" />
+      {previewPrograms.length > 0 ? (
+        previewPrograms.map(({ program, match }) => (
+          <ProgramCard
+            key={`notification-preview-${program.id}`}
+            language={language}
+            program={program}
+            match={match}
+            compact
+            onOpen={() => onOpen(program)}
+          />
+        ))
+      ) : (
+        <EmptyState text={t(language, "noMatchingPrograms")} compact />
+      )}
 
       <SectionTitle title={t(language, "deadlineSoon")} icon="alarm-outline" />
-      {deadlineItems.map((program) => (
-        <AlertRow
-          key={`deadline-${program.id}`}
-          language={language}
-          program={program}
-          onReminder={() => scheduleReminder(program)}
-        />
-      ))}
+      {deadlineItems.length > 0 ? (
+        deadlineItems.map(({ program, match }) => (
+          <ProgramCard
+            key={`deadline-${program.id}`}
+            language={language}
+            program={program}
+            match={match}
+            compact
+            onOpen={() => onOpen(program)}
+          />
+        ))
+      ) : (
+        <EmptyState text={t(language, "noDeadlinePrograms")} compact />
+      )}
     </ScrollView>
   );
 }
@@ -1248,8 +1330,24 @@ function formatProfileSummary(profile: UserProfile, language: Language) {
   return `${profile.region} / ${t(language, profile.household)} / ${childText} / ${disabilityText} / ${foreignText}`;
 }
 
+function formatSupportNotificationBody(
+  language: Language,
+  likelyCount: number,
+  highCount: number
+) {
+  if (language === "ja") {
+    return `関係ありそうな支援が${likelyCount}件あります。可能性が高い支援は${highCount}件です。`;
+  }
+
+  return `${likelyCount} support programs may fit you. ${highCount} look highly relevant.`;
+}
+
 function normalizeProfile(profile: UserProfile): UserProfile {
   let next = { ...profile };
+
+  if (!next.notificationFrequency) {
+    next.notificationFrequency = next.notificationsEnabled ? "daily" : "off";
+  }
 
   if (next.hasChildren && next.childrenCount > 0 && next.household === "single") {
     next.household = "single_parent";
@@ -1580,6 +1678,64 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     flex: 1,
+    color: "#52635A",
+    fontSize: 14,
+    lineHeight: 20
+  },
+  notificationSummary: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14
+  },
+  notificationIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: "#2E6B4F",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  notificationSummaryText: {
+    flex: 1
+  },
+  notificationCount: {
+    color: "#16352A",
+    fontSize: 28,
+    fontWeight: "900",
+    lineHeight: 34
+  },
+  notificationCountUnit: {
+    color: "#52635A",
+    fontSize: 14,
+    fontWeight: "800"
+  },
+  notificationBody: {
+    marginTop: 4,
+    color: "#52635A",
+    fontSize: 14,
+    lineHeight: 20
+  },
+  previewCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 15,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#DDE6E0"
+  },
+  previewTitle: {
+    color: "#16352A",
+    fontSize: 15,
+    fontWeight: "900",
+    marginBottom: 6
+  },
+  previewBody: {
     color: "#52635A",
     fontSize: 14,
     lineHeight: 20

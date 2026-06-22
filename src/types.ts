@@ -2,6 +2,8 @@ export type Language = "ja" | "en";
 
 export type MatchLevel = "high" | "needs_check" | "unlikely";
 
+export type NotificationFrequency = "off" | "daily" | "weekly";
+
 export type Category =
   | "single_parent"
   | "childcare"
@@ -24,6 +26,7 @@ export type UserProfile = {
   wantsForeignSupport: boolean;
   language: Language;
   notificationsEnabled: boolean;
+  notificationFrequency: NotificationFrequency;
 };
 
 export type SupportProgram = {
