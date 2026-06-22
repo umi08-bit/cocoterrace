@@ -15,11 +15,13 @@ import {
   TextInput,
   View
 } from "react-native";
-import { supportPrograms } from "./src/data/programs";
+import { supportPrograms as localSupportPrograms } from "./src/data/programs";
 import { categoryLabel, matchLabel, t } from "./src/i18n";
+import { fetchSupportProgramsFromFirestore } from "./src/services/supportPrograms";
 import { Language, MatchLevel, SupportProgram, UserProfile } from "./src/types";
 
 type Tab = "home" | "search" | "alerts" | "profile";
+type ProgramDataSource = "loading" | "cloud" | "local";
 const SUPPORTED_REGIONS = [
   "神戸市",
   "尼崎市",
@@ -129,6 +131,9 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(initialProfile);
   const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [programs, setPrograms] = useState<SupportProgram[]>(localSupportPrograms);
+  const [programDataSource, setProgramDataSource] =
+    useState<ProgramDataSource>("loading");
   const [selectedProgram, setSelectedProgram] = useState<SupportProgram | null>(
     null
   );
@@ -168,6 +173,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadSupportPrograms() {
+      try {
+        const cloudPrograms = await fetchSupportProgramsFromFirestore();
+        if (!isMounted) return;
+
+        if (cloudPrograms.length > 0) {
+          setPrograms(cloudPrograms);
+          setProgramDataSource("cloud");
+        } else {
+          setPrograms(localSupportPrograms);
+          setProgramDataSource("local");
+        }
+      } catch {
+        if (isMounted) {
+          setPrograms(localSupportPrograms);
+          setProgramDataSource("local");
+        }
+      }
+    }
+
+    loadSupportPrograms();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hasLoadedProfile || needsOnboarding) return;
 
     AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile)).catch(() => {
@@ -177,14 +212,14 @@ export default function App() {
 
   const matchedPrograms = useMemo(
     () =>
-      supportPrograms
+      programs
         .map((program) => ({
           program,
           match: getMatchLevel(program, profile)
         }))
         .filter((item) => item.match !== "unlikely")
         .sort((a, b) => scoreMatch(b.match) - scoreMatch(a.match)),
-    [profile]
+    [profile, programs]
   );
 
   if (!hasLoadedProfile) {
@@ -260,6 +295,9 @@ export default function App() {
           <Text style={styles.headerSub}>
             {profile.region} / {t(language, profile.household)}
           </Text>
+          <Text style={styles.dataSourceText}>
+            {t(language, `programData_${programDataSource}`)}
+          </Text>
         </View>
         <SegmentedLanguage
           language={language}
@@ -278,6 +316,7 @@ export default function App() {
         <SearchScreen
           language={language}
           profile={profile}
+          programs={programs}
           onOpen={setSelectedProgram}
         />
       )}
@@ -370,10 +409,12 @@ function HomeScreen({
 function SearchScreen({
   language,
   profile,
+  programs,
   onOpen
 }: {
   language: Language;
   profile: UserProfile;
+  programs: SupportProgram[];
   onOpen: (program: SupportProgram) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -382,7 +423,7 @@ function SearchScreen({
   const selectedConcernCard = concernCards.find(
     (concern) => concern.id === selectedConcern
   );
-  const results = supportPrograms
+  const results = programs
     .filter((program) => matchesConcern(program, selectedConcernCard))
     .filter((program) => matchesSearchQuery(program, normalizedQuery))
     .map((program) => ({
@@ -1317,6 +1358,12 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 13,
     color: "#52635A"
+  },
+  dataSourceText: {
+    marginTop: 4,
+    color: "#2E6B4F",
+    fontSize: 12,
+    fontWeight: "800"
   },
   content: {
     paddingHorizontal: 18,

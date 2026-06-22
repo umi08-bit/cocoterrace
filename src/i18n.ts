@@ -7,6 +7,9 @@ const dictionaries: Record<Language, Dictionary> = {
     appName: "ココロテラス",
     appTagline: "兵庫県の福祉支援ナビ",
     loadingProfile: "プロフィールを読み込んでいます。",
+    programData_loading: "支援データを確認中",
+    programData_cloud: "クラウドデータを表示中",
+    programData_local: "端末内データを表示中",
     firstProfileTitle: "最初にプロフィールを設定しましょう",
     firstProfileBody:
       "ここで選んだ内容は、この端末内に保存されます。あとからプロフィール画面で変更できます。",
@@ -110,6 +113,9 @@ const dictionaries: Record<Language, Dictionary> = {
     appName: "Cocoterrace",
     appTagline: "Hyogo Welfare Support Navi",
     loadingProfile: "Loading your profile.",
+    programData_loading: "Checking support data",
+    programData_cloud: "Showing cloud data",
+    programData_local: "Showing on-device data",
     firstProfileTitle: "Set up your profile first",
     firstProfileBody:
       "Your choices are saved on this device. You can change them later from Profile.",
