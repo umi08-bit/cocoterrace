@@ -2,7 +2,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
-const admin = require("firebase-admin");
+const { cert, getApps, initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
 
 const projectRoot = path.resolve(__dirname, "..");
 const defaultProgramsPath = path.join(projectRoot, "src", "data", "programs.ts");
@@ -123,13 +124,13 @@ async function importPrograms() {
   const serviceAccountPath = getServiceAccountPath();
   const serviceAccount = require(serviceAccountPath);
 
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+  if (getApps().length === 0) {
+    initializeApp({
+      credential: cert(serviceAccount)
     });
   }
 
-  const db = admin.firestore();
+  const db = getFirestore();
   const collection = db.collection(collectionName);
 
   let batch = db.batch();
