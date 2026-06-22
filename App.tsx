@@ -882,7 +882,7 @@ function ProgramDetail({
     program,
     documents
   });
-  const [consultationMemo, setConsultationMemo] = useState(generatedMemo);
+  const [consultationMemo, setConsultationMemo] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -923,10 +923,10 @@ function ProgramDetail({
           `${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`
         );
         if (!isMounted) return;
-        setConsultationMemo(savedMemo || generatedMemo);
+        setConsultationMemo(savedMemo || "");
       } catch {
         if (isMounted) {
-          setConsultationMemo(generatedMemo);
+          setConsultationMemo("");
         }
       }
     }
@@ -963,13 +963,19 @@ function ProgramDetail({
     Alert.alert(t(language, "memoCopiedTitle"), t(language, "memoCopiedBody"));
   }
 
-  async function resetConsultationMemo() {
+  async function applyConsultationMemoTemplate() {
     await AsyncStorage.setItem(
       `${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`,
       generatedMemo
     );
     setConsultationMemo(generatedMemo);
-    Alert.alert(t(language, "memoResetTitle"), t(language, "memoResetBody"));
+    Alert.alert(t(language, "memoTemplateTitle"), t(language, "memoTemplateBody"));
+  }
+
+  async function clearConsultationMemo() {
+    await AsyncStorage.setItem(`${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`, "");
+    setConsultationMemo("");
+    Alert.alert(t(language, "memoClearedTitle"), t(language, "memoClearedBody"));
   }
 
   return (
@@ -1001,7 +1007,8 @@ function ProgramDetail({
           memo={consultationMemo}
           onChange={updateConsultationMemo}
           onCopy={copyConsultationMemo}
-          onReset={resetConsultationMemo}
+          onUseTemplate={applyConsultationMemoTemplate}
+          onClear={clearConsultationMemo}
         />
         <DetailBlock
           title={t(language, "deadline")}
@@ -1209,13 +1216,119 @@ function ConsultationMemo({
   memo,
   onChange,
   onCopy,
-  onReset
+  onUseTemplate,
+  onClear
 }: {
   language: Language;
   memo: string;
   onChange: (text: string) => void;
   onCopy: () => void;
-  onReset: () => void;
+  onUseTemplate: () => void;
+  onClear: () => void;
+}) {
+  return (
+    <View style={styles.detailBlock}>
+      <Text style={styles.detailBlockTitle}>{t(language, "consultationMemo")}</Text>
+      <Text style={styles.checklistHint}>{t(language, "consultationMemoHint")}</Text>
+      <ConsultationMemoBody language={language} memo={memo} onChange={onChange} />
+      <View style={styles.memoActions}>
+        <Pressable style={styles.memoButton} onPress={onCopy}>
+          <Ionicons name="copy-outline" size={18} color="#2E6B4F" />
+          <Text style={styles.memoButtonText}>{t(language, "copyMemo")}</Text>
+        </Pressable>
+        <Pressable style={styles.memoButton} onPress={onUseTemplate}>
+          <Ionicons name="create-outline" size={18} color="#2E6B4F" />
+          <Text style={styles.memoButtonText}>{t(language, "useMemoTemplate")}</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.memoButton, styles.memoButtonDanger]}
+          onPress={onClear}
+        >
+          <Ionicons name="trash-outline" size={18} color="#8A3A31" />
+          <Text style={[styles.memoButtonText, styles.memoButtonDangerText]}>
+            {t(language, "clearMemo")}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+function EmptyMemoSection({
+  title,
+  value,
+  onChange,
+  style
+}: {
+  title: string;
+  value: string;
+  onChange: (text: string) => void;
+  style?: object;
+}) {
+  return (
+    <View style={[styles.memoSection, style]}>
+      <Text style={styles.memoSectionTitle}>{title}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        multiline
+        textAlignVertical="top"
+        style={styles.memoSectionInput}
+      />
+    </View>
+  );
+}
+
+function ConsultationMemoSectionList({
+  sections,
+  onChangeSection
+}: {
+  sections: { title: string; body: string }[];
+  onChangeSection: (index: number, text: string) => void;
+}) {
+  return (
+    <>
+      {sections.map((section, index) => (
+        <EmptyMemoSection
+          key={`${section.title}-${index}`}
+          title={section.title}
+          value={section.body}
+          onChange={(text) => onChangeSection(index, text)}
+          style={index === 0 ? undefined : styles.memoSectionSpacing}
+        />
+      ))}
+    </>
+  );
+}
+
+function LegacyMemoEditor({
+  memo,
+  onChange
+}: {
+  memo: string;
+  onChange: (text: string) => void;
+}) {
+  return (
+    <View style={styles.memoSection}>
+      <TextInput
+        value={memo}
+        onChangeText={onChange}
+        multiline
+        textAlignVertical="top"
+        style={styles.memoSectionInput}
+      />
+    </View>
+  );
+}
+
+function ConsultationMemoBody({
+  language,
+  memo,
+  onChange
+}: {
+  language: Language;
+  memo: string;
+  onChange: (text: string) => void;
 }) {
   const memoSections = parseConsultationMemo(memo, language);
 
@@ -1226,34 +1339,31 @@ function ConsultationMemo({
     onChange(formatConsultationMemoSections(nextSections));
   }
 
-  return (
-    <View style={styles.detailBlock}>
-      <Text style={styles.detailBlockTitle}>{t(language, "consultationMemo")}</Text>
-      <Text style={styles.checklistHint}>{t(language, "consultationMemoHint")}</Text>
-      {memoSections.map((section, index) => (
-        <View key={`${section.title}-${index}`} style={styles.memoSection}>
-          <Text style={styles.memoSectionTitle}>{section.title}</Text>
-          <TextInput
-            value={section.body}
-            onChangeText={(text) => updateSection(index, text)}
-            multiline
-            textAlignVertical="top"
-            style={styles.memoSectionInput}
-          />
-        </View>
-      ))}
-      <View style={styles.memoActions}>
-        <Pressable style={styles.memoButton} onPress={onCopy}>
-          <Ionicons name="copy-outline" size={18} color="#2E6B4F" />
-          <Text style={styles.memoButtonText}>{t(language, "copyMemo")}</Text>
-        </Pressable>
-        <Pressable style={styles.memoButton} onPress={onReset}>
-          <Ionicons name="refresh-outline" size={18} color="#2E6B4F" />
-          <Text style={styles.memoButtonText}>{t(language, "resetMemo")}</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
+  if (!memo.trim()) {
+    return (
+      <ConsultationMemoSectionList
+        sections={createBlankConsultationMemoSections(language)}
+        onChangeSection={(index, text) => {
+          const blankSections = createBlankConsultationMemoSections(language);
+          const nextSections = blankSections.map((section, sectionIndex) =>
+            sectionIndex === index ? { ...section, body: text } : section
+          );
+          onChange(formatConsultationMemoSections(nextSections));
+        }}
+      />
+    );
+  }
+
+  if (memoSections.some((section) => section.body)) {
+    return (
+      <ConsultationMemoSectionList
+        sections={memoSections}
+        onChangeSection={updateSection}
+      />
+    );
+  }
+
+  return <LegacyMemoEditor memo={memo} onChange={onChange} />;
 }
 
 function ProfileRow({ label, value }: { label: string; value: string }) {
@@ -1706,6 +1816,18 @@ function parseConsultationMemo(memo: string, language: Language) {
   return sections.map((section) => ({
     ...section,
     body: section.body.trim()
+  }));
+}
+
+function createBlankConsultationMemoSections(language: Language) {
+  const titles =
+    language === "ja"
+      ? ["相談したいこと", "伝えたい状況", "確認したいこと", "持参予定の書類"]
+      : ["What I want to ask", "My situation", "Questions", "Documents I may bring"];
+
+  return titles.map((title) => ({
+    title,
+    body: ""
   }));
 }
 
@@ -2451,6 +2573,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 10
   },
+  memoSectionSpacing: {
+    marginTop: 10
+  },
   memoSectionTitle: {
     color: "#2E6B4F",
     fontSize: 13,
@@ -2470,7 +2595,7 @@ const styles = StyleSheet.create({
   },
   memoActions: {
     flexDirection: "row",
-    gap: 10,
+    gap: 8,
     marginTop: 12
   },
   memoButton: {
@@ -2483,13 +2608,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
-    paddingHorizontal: 10
+    gap: 6,
+    paddingHorizontal: 8
   },
   memoButtonText: {
     color: "#2E6B4F",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "800"
+  },
+  memoButtonDanger: {
+    borderColor: "#E0B9B2",
+    backgroundColor: "#FFF7F5"
+  },
+  memoButtonDangerText: {
+    color: "#8A3A31"
   },
   primaryButton: {
     height: 52,
