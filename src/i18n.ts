@@ -92,6 +92,13 @@ const dictionaries: Record<Language, Dictionary> = {
     consultation: "相談窓口",
     details: "詳細",
     benefit: "受けられる内容",
+    consultationMemo: "相談メモ",
+    consultationMemoHint:
+      "窓口で話す内容を整理できます。必要に応じて書き換えて使ってください。",
+    copyMemo: "コピー",
+    resetMemo: "作り直す",
+    memoCopiedTitle: "コピーしました",
+    memoCopiedBody: "相談メモをコピーしました。窓口への連絡やメモアプリに貼り付けて使えます。",
     eligibility: "対象となる可能性がある人",
     deadline: "申請期限",
     documents: "必要書類",
@@ -218,6 +225,14 @@ const dictionaries: Record<Language, Dictionary> = {
     consultation: "Consultation",
     details: "Details",
     benefit: "Support details",
+    consultationMemo: "Consultation memo",
+    consultationMemoHint:
+      "Organize what to say at the counter. You can edit this memo before using it.",
+    copyMemo: "Copy",
+    resetMemo: "Reset",
+    memoCopiedTitle: "Copied",
+    memoCopiedBody:
+      "The consultation memo has been copied. You can paste it into a message or notes app.",
     eligibility: "Who may qualify",
     deadline: "Deadline",
     documents: "Documents",

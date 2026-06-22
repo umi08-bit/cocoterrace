@@ -1,6 +1,7 @@
 ﻿import { Ionicons } from "@expo/vector-icons";
 import * as Linking from "expo-linking";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Clipboard from "expo-clipboard";
 import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo, useState } from "react";
@@ -46,6 +47,7 @@ type ConcernId =
   | "urgent";
 const PROFILE_STORAGE_KEY = "cocoterrace:user-profile:v1";
 const DOCUMENT_CHECKLIST_STORAGE_PREFIX = "cocoterrace:document-checklist:";
+const CONSULTATION_MEMO_STORAGE_PREFIX = "cocoterrace:consultation-memo:";
 
 const concernCards: {
   id: ConcernId;
@@ -874,6 +876,13 @@ function ProgramDetail({
   const match = getMatchLevel(program, profile);
   const [checkedDocuments, setCheckedDocuments] = useState<number[]>([]);
   const checkedCount = checkedDocuments.filter((index) => index < documents.length).length;
+  const generatedMemo = createConsultationMemo({
+    language,
+    profile,
+    program,
+    documents
+  });
+  const [consultationMemo, setConsultationMemo] = useState(generatedMemo);
 
   useEffect(() => {
     let isMounted = true;
@@ -905,6 +914,30 @@ function ProgramDetail({
     };
   }, [program.id]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMemo() {
+      try {
+        const savedMemo = await AsyncStorage.getItem(
+          `${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`
+        );
+        if (!isMounted) return;
+        setConsultationMemo(savedMemo || generatedMemo);
+      } catch {
+        if (isMounted) {
+          setConsultationMemo(generatedMemo);
+        }
+      }
+    }
+
+    loadMemo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [generatedMemo, program.id]);
+
   async function toggleDocument(index: number) {
     const next = checkedDocuments.includes(index)
       ? checkedDocuments.filter((item) => item !== index)
@@ -915,6 +948,24 @@ function ProgramDetail({
       `${DOCUMENT_CHECKLIST_STORAGE_PREFIX}${program.id}`,
       JSON.stringify(next)
     );
+  }
+
+  async function updateConsultationMemo(text: string) {
+    setConsultationMemo(text);
+    await AsyncStorage.setItem(
+      `${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`,
+      text
+    );
+  }
+
+  async function copyConsultationMemo() {
+    await Clipboard.setStringAsync(consultationMemo);
+    Alert.alert(t(language, "memoCopiedTitle"), t(language, "memoCopiedBody"));
+  }
+
+  async function resetConsultationMemo() {
+    await AsyncStorage.removeItem(`${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`);
+    setConsultationMemo(generatedMemo);
   }
 
   return (
@@ -941,6 +992,13 @@ function ProgramDetail({
 
         <DetailBlock title={t(language, "eligibility")} body={eligibility} />
         <DetailBlock title={t(language, "benefit")} body={benefit} />
+        <ConsultationMemo
+          language={language}
+          memo={consultationMemo}
+          onChange={updateConsultationMemo}
+          onCopy={copyConsultationMemo}
+          onReset={resetConsultationMemo}
+        />
         <DetailBlock
           title={t(language, "deadline")}
           body={program.deadline ?? t(language, "noDeadline")}
@@ -1138,6 +1196,44 @@ function DocumentChecklist({
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+function ConsultationMemo({
+  language,
+  memo,
+  onChange,
+  onCopy,
+  onReset
+}: {
+  language: Language;
+  memo: string;
+  onChange: (text: string) => void;
+  onCopy: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <View style={styles.detailBlock}>
+      <Text style={styles.detailBlockTitle}>{t(language, "consultationMemo")}</Text>
+      <Text style={styles.checklistHint}>{t(language, "consultationMemoHint")}</Text>
+      <TextInput
+        value={memo}
+        onChangeText={onChange}
+        multiline
+        textAlignVertical="top"
+        style={styles.memoInput}
+      />
+      <View style={styles.memoActions}>
+        <Pressable style={styles.memoButton} onPress={onCopy}>
+          <Ionicons name="copy-outline" size={18} color="#2E6B4F" />
+          <Text style={styles.memoButtonText}>{t(language, "copyMemo")}</Text>
+        </Pressable>
+        <Pressable style={styles.memoButton} onPress={onReset}>
+          <Ionicons name="refresh-outline" size={18} color="#2E6B4F" />
+          <Text style={styles.memoButtonText}>{t(language, "resetMemo")}</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -1462,6 +1558,85 @@ function formatSupportNotificationBody(
   }
 
   return `${likelyCount} support programs may fit you. ${highCount} look highly relevant.`;
+}
+
+function createConsultationMemo({
+  language,
+  profile,
+  program,
+  documents
+}: {
+  language: Language;
+  profile: UserProfile;
+  program: SupportProgram;
+  documents: string[];
+}) {
+  const title = language === "ja" ? program.titleJa : program.titleEn;
+  const childLine = profile.hasChildren
+    ? language === "ja"
+      ? `子どもは${profile.childrenCount}人です。`
+      : `I have ${profile.childrenCount} child/children.`
+    : language === "ja"
+      ? "子どもはいません。"
+      : "I do not have children.";
+  const disabilityLine = profile.hasDisability
+    ? language === "ja"
+      ? "障がいに関係する支援も確認したいです。"
+      : "I also want to ask about disability-related support."
+    : null;
+  const foreignLine = profile.wantsForeignSupport
+    ? language === "ja"
+      ? "外国人住民向け、または外国語で相談できる支援も確認したいです。"
+      : "I also want to ask about support for foreign residents or language help."
+    : null;
+
+  if (language === "ja") {
+    return [
+      "相談したいこと:",
+      `${title}について、対象になる可能性があるか確認したいです。`,
+      "",
+      "伝えたい状況:",
+      `${profile.region}に住んでいます。`,
+      `家族構成は「${t(language, profile.household)}」です。`,
+      childLine,
+      disabilityLine,
+      foreignLine,
+      "",
+      "確認したいこと:",
+      "・対象条件に当てはまるか",
+      "・申請に必要な書類",
+      "・申請場所と申請方法",
+      "・申請期限や注意点",
+      "",
+      "持参予定の書類:",
+      ...documents.map((document) => `・${document}`)
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n");
+  }
+
+  return [
+    "What I want to ask:",
+    `I would like to check whether I may qualify for ${title}.`,
+    "",
+    "My situation:",
+    `I live in ${profile.region}.`,
+    `My household type is ${t(language, profile.household)}.`,
+    childLine,
+    disabilityLine,
+    foreignLine,
+    "",
+    "Questions:",
+    "- Whether I may meet the conditions",
+    "- Required documents",
+    "- Where and how to apply",
+    "- Deadline and important notes",
+    "",
+    "Documents I may bring:",
+    ...documents.map((document) => `- ${document}`)
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
 }
 
 function normalizeProfile(profile: UserProfile): UserProfile {
@@ -2189,6 +2364,40 @@ const styles = StyleSheet.create({
   },
   checklistTextChecked: {
     color: "#2E6B4F"
+  },
+  memoInput: {
+    minHeight: 210,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    backgroundColor: "#F9FCFA",
+    padding: 12,
+    color: "#16352A",
+    fontSize: 14,
+    lineHeight: 21
+  },
+  memoActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12
+  },
+  memoButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#C8D9CE",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingHorizontal: 10
+  },
+  memoButtonText: {
+    color: "#2E6B4F",
+    fontSize: 14,
+    fontWeight: "800"
   },
   primaryButton: {
     height: 52,
