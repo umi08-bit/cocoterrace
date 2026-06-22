@@ -48,6 +48,7 @@ type ConcernId =
 const PROFILE_STORAGE_KEY = "cocoterrace:user-profile:v1";
 const DOCUMENT_CHECKLIST_STORAGE_PREFIX = "cocoterrace:document-checklist:";
 const CONSULTATION_MEMO_STORAGE_PREFIX = "cocoterrace:consultation-memo:";
+const SAVED_PROGRAMS_STORAGE_KEY = "cocoterrace:saved-programs:v1";
 
 const concernCards: {
   id: ConcernId;
@@ -147,6 +148,7 @@ export default function App() {
   const [selectedProgram, setSelectedProgram] = useState<SupportProgram | null>(
     null
   );
+  const [savedProgramIds, setSavedProgramIds] = useState<string[]>([]);
   const language = profile.language;
 
   useEffect(() => {
@@ -176,6 +178,29 @@ export default function App() {
     }
 
     loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSavedPrograms() {
+      try {
+        const savedIds = await AsyncStorage.getItem(SAVED_PROGRAMS_STORAGE_KEY);
+        if (!isMounted) return;
+        const parsed = savedIds ? JSON.parse(savedIds) : [];
+        setSavedProgramIds(Array.isArray(parsed) ? parsed : []);
+      } catch {
+        if (isMounted) {
+          setSavedProgramIds([]);
+        }
+      }
+    }
+
+    loadSavedPrograms();
 
     return () => {
       isMounted = false;
@@ -231,6 +256,25 @@ export default function App() {
         .sort((a, b) => scoreMatch(b.match) - scoreMatch(a.match)),
     [profile, programs]
   );
+  const savedPrograms = useMemo(
+    () =>
+      savedProgramIds
+        .map((id) => programs.find((program) => program.id === id))
+        .filter((program): program is SupportProgram => Boolean(program))
+        .map((program) => ({
+          program,
+          match: getMatchLevel(program, profile)
+        })),
+    [profile, programs, savedProgramIds]
+  );
+
+  async function toggleSavedProgram(programId: string) {
+    const next = savedProgramIds.includes(programId)
+      ? savedProgramIds.filter((id) => id !== programId)
+      : [programId, ...savedProgramIds];
+    setSavedProgramIds(next);
+    await AsyncStorage.setItem(SAVED_PROGRAMS_STORAGE_KEY, JSON.stringify(next));
+  }
 
   if (!hasLoadedProfile) {
     return (
@@ -290,6 +334,8 @@ export default function App() {
         language={language}
         program={selectedProgram}
         profile={profile}
+        isSaved={savedProgramIds.includes(selectedProgram.id)}
+        onToggleSaved={() => toggleSavedProgram(selectedProgram.id)}
         onBack={() => setSelectedProgram(null)}
       />
     );
@@ -319,6 +365,7 @@ export default function App() {
         <HomeScreen
           profile={profile}
           programs={matchedPrograms}
+          savedPrograms={savedPrograms}
           onOpen={setSelectedProgram}
         />
       )}
@@ -345,7 +392,9 @@ export default function App() {
           onChange={setProfile}
           onReset={async () => {
             await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+            await AsyncStorage.removeItem(SAVED_PROGRAMS_STORAGE_KEY);
             setSelectedProgram(null);
+            setSavedProgramIds([]);
             setProfile(initialProfile);
             setNeedsOnboarding(true);
           }}
@@ -360,10 +409,12 @@ export default function App() {
 function HomeScreen({
   profile,
   programs,
+  savedPrograms,
   onOpen
 }: {
   profile: UserProfile;
   programs: { program: SupportProgram; match: MatchLevel }[];
+  savedPrograms: { program: SupportProgram; match: MatchLevel }[];
   onOpen: (program: SupportProgram) => void;
 }) {
   const language = profile.language;
@@ -384,6 +435,22 @@ function HomeScreen({
           {formatProfileSummary(profile, language)}
         </Text>
       </View>
+
+      <SectionTitle title={t(language, "savedPrograms")} icon="bookmark-outline" />
+      {savedPrograms.length > 0 ? (
+        savedPrograms.map(({ program, match }) => (
+          <ProgramCard
+            key={`saved-${program.id}`}
+            language={language}
+            program={program}
+            match={match}
+            compact
+            onOpen={() => onOpen(program)}
+          />
+        ))
+      ) : (
+        <EmptyState text={t(language, "noSavedPrograms")} compact />
+      )}
 
       <SectionTitle
         title={t(language, "likelySupport")}
@@ -857,11 +924,15 @@ function ProgramDetail({
   language,
   program,
   profile,
+  isSaved,
+  onToggleSaved,
   onBack
 }: {
   language: Language;
   program: SupportProgram;
   profile: UserProfile;
+  isSaved: boolean;
+  onToggleSaved: () => void;
   onBack: () => void;
 }) {
   const title = language === "ja" ? program.titleJa : program.titleEn;
@@ -994,6 +1065,19 @@ function ProgramDetail({
           <Pill text={categoryLabel(language, program.category)} tone="soft" />
           <Pill text={matchLabel(language, match)} tone={match} />
         </View>
+        <Pressable
+          style={[styles.saveButton, isSaved && styles.saveButtonActive]}
+          onPress={onToggleSaved}
+        >
+          <Ionicons
+            name={isSaved ? "bookmark" : "bookmark-outline"}
+            size={20}
+            color={isSaved ? "#FFFFFF" : "#2E6B4F"}
+          />
+          <Text style={[styles.saveButtonText, isSaved && styles.saveButtonTextActive]}>
+            {t(language, isSaved ? "savedForLater" : "saveForLater")}
+          </Text>
+        </Pressable>
         <Text style={styles.summary}>{summary}</Text>
         <View style={styles.noticeBand}>
           <Ionicons name="information-circle-outline" size={21} color="#2E6B4F" />
@@ -2481,6 +2565,31 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
     marginBottom: 14
+  },
+  saveButton: {
+    minHeight: 46,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#C8D9CE",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    marginBottom: 14
+  },
+  saveButtonActive: {
+    backgroundColor: "#2E6B4F",
+    borderColor: "#2E6B4F"
+  },
+  saveButtonText: {
+    color: "#2E6B4F",
+    fontSize: 15,
+    fontWeight: "800"
+  },
+  saveButtonTextActive: {
+    color: "#FFFFFF"
   },
   summary: {
     fontSize: 16,
