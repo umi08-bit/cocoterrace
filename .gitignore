@@ -8,3 +8,5 @@ web-build/
 expo-server.log
 expo-server.err.log
 npm-debug.log*
+firebase-service-account*.json
+secrets/

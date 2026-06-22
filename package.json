@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "firestore:import": "node scripts/importSupportProgramsToFirestore.js",
+    "firestore:import:dry": "node scripts/importSupportProgramsToFirestore.js --dry-run"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -25,6 +27,7 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "babel-preset-expo": "^54.0.11",
+    "firebase-admin": "^14.0.0",
     "typescript": "~5.9.2"
   }
 }
