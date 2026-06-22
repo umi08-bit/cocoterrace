@@ -546,7 +546,6 @@ function AlertsScreen({
   const likelyCount = programs.length;
   const highCount = programs.filter((item) => item.match === "high").length;
   const deadlineItems = programs.filter((item) => isDeadlineSoon(item.program.deadline));
-  const previewPrograms = programs.slice(0, 3);
 
   async function scheduleSupportSummary(frequency: NotificationFrequency) {
     const nextProfile = normalizeProfile({
@@ -586,6 +585,27 @@ function AlertsScreen({
       t(language, "notificationScheduleSaved"),
       formatSupportNotificationBody(language, likelyCount, highCount)
     );
+  }
+
+  async function sendTestNotification() {
+    const permission = await Notifications.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t(language, "notifications"), t(language, "notificationPermissionNeeded"));
+      return;
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: t(language, "supportNotificationTitle"),
+        body: formatSupportNotificationBody(language, likelyCount, highCount)
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: 5
+      }
+    });
+
+    Alert.alert(t(language, "testNotificationSent"), t(language, "testNotificationHint"));
   }
 
   return (
@@ -628,10 +648,16 @@ function AlertsScreen({
           {formatSupportNotificationBody(language, likelyCount, highCount)}
         </Text>
       </View>
+      <Pressable style={styles.secondaryButton} onPress={sendTestNotification}>
+        <Ionicons name="paper-plane-outline" size={19} color="#2E6B4F" />
+        <Text style={styles.secondaryButtonText}>
+          {t(language, "sendTestNotification")}
+        </Text>
+      </Pressable>
 
       <SectionTitle title={t(language, "likelySupport")} icon="sparkles-outline" />
-      {previewPrograms.length > 0 ? (
-        previewPrograms.map(({ program, match }) => (
+      {programs.length > 0 ? (
+        programs.map(({ program, match }) => (
           <ProgramCard
             key={`notification-preview-${program.id}`}
             language={language}
@@ -1739,6 +1765,24 @@ const styles = StyleSheet.create({
     color: "#52635A",
     fontSize: 14,
     lineHeight: 20
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#C8D9CE",
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    marginBottom: 18
+  },
+  secondaryButtonText: {
+    color: "#2E6B4F",
+    fontSize: 15,
+    fontWeight: "800"
   },
   alertRow: {
     backgroundColor: "#FFFFFF",
