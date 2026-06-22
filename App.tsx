@@ -1213,17 +1213,31 @@ function ConsultationMemo({
   onCopy: () => void;
   onReset: () => void;
 }) {
+  const memoSections = parseConsultationMemo(memo, language);
+
+  function updateSection(index: number, text: string) {
+    const nextSections = memoSections.map((section, sectionIndex) =>
+      sectionIndex === index ? { ...section, body: text } : section
+    );
+    onChange(formatConsultationMemoSections(nextSections));
+  }
+
   return (
     <View style={styles.detailBlock}>
       <Text style={styles.detailBlockTitle}>{t(language, "consultationMemo")}</Text>
       <Text style={styles.checklistHint}>{t(language, "consultationMemoHint")}</Text>
-      <TextInput
-        value={memo}
-        onChangeText={onChange}
-        multiline
-        textAlignVertical="top"
-        style={styles.memoInput}
-      />
+      {memoSections.map((section, index) => (
+        <View key={`${section.title}-${index}`} style={styles.memoSection}>
+          <Text style={styles.memoSectionTitle}>{section.title}</Text>
+          <TextInput
+            value={section.body}
+            onChangeText={(text) => updateSection(index, text)}
+            multiline
+            textAlignVertical="top"
+            style={styles.memoSectionInput}
+          />
+        </View>
+      ))}
       <View style={styles.memoActions}>
         <Pressable style={styles.memoButton} onPress={onCopy}>
           <Ionicons name="copy-outline" size={18} color="#2E6B4F" />
@@ -1637,6 +1651,66 @@ function createConsultationMemo({
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
+}
+
+function parseConsultationMemo(memo: string, language: Language) {
+  const titles: string[] =
+    language === "ja"
+      ? [
+          "相談したいこと:",
+          "伝えたい状況:",
+          "確認したいこと:",
+          "持参予定の書類:"
+        ]
+      : [
+          "What I want to ask:",
+          "My situation:",
+          "Questions:",
+          "Documents I may bring:"
+        ];
+  const fallbackTitles: string[] =
+    language === "ja"
+      ? ["相談したいこと", "伝えたい状況", "確認したいこと", "持参予定の書類"]
+      : ["What I want to ask", "My situation", "Questions", "Documents I may bring"];
+  const lines = memo.split("\n");
+  const sections: { title: string; body: string }[] = titles.map((title, index) => ({
+    title: fallbackTitles[index] ?? title.replace(/:$/, ""),
+    body: ""
+  }));
+  let currentIndex = -1;
+
+  for (const line of lines) {
+    const titleIndex = titles.findIndex((title) => line.trim() === title);
+    if (titleIndex >= 0) {
+      currentIndex = titleIndex;
+      continue;
+    }
+
+    if (currentIndex >= 0) {
+      const currentSection = sections[currentIndex];
+      if (!currentSection) continue;
+      currentSection.body = [currentSection.body, line]
+        .filter(Boolean)
+        .join("\n");
+    } else if (line.trim()) {
+      const firstSection = sections[0];
+      if (!firstSection) continue;
+      firstSection.body = [firstSection.body, line].filter(Boolean).join("\n");
+    }
+  }
+
+  return sections.map((section) => ({
+    ...section,
+    body: section.body.trim()
+  }));
+}
+
+function formatConsultationMemoSections(
+  sections: { title: string; body: string }[]
+) {
+  return sections
+    .map((section) => `${section.title}:\n${section.body.trim()}`)
+    .join("\n\n");
 }
 
 function normalizeProfile(profile: UserProfile): UserProfile {
@@ -2365,12 +2439,26 @@ const styles = StyleSheet.create({
   checklistTextChecked: {
     color: "#2E6B4F"
   },
-  memoInput: {
-    minHeight: 210,
+  memoSection: {
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#DDE6E0",
     backgroundColor: "#F9FCFA",
+    padding: 12,
+    marginTop: 10
+  },
+  memoSectionTitle: {
+    color: "#2E6B4F",
+    fontSize: 13,
+    fontWeight: "900",
+    marginBottom: 8
+  },
+  memoSectionInput: {
+    minHeight: 78,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     color: "#16352A",
     fontSize: 14,
