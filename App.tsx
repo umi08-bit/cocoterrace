@@ -964,8 +964,12 @@ function ProgramDetail({
   }
 
   async function resetConsultationMemo() {
-    await AsyncStorage.removeItem(`${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`);
+    await AsyncStorage.setItem(
+      `${CONSULTATION_MEMO_STORAGE_PREFIX}${program.id}`,
+      generatedMemo
+    );
     setConsultationMemo(generatedMemo);
+    Alert.alert(t(language, "memoResetTitle"), t(language, "memoResetBody"));
   }
 
   return (

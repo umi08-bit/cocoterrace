@@ -99,6 +99,8 @@ const dictionaries: Record<Language, Dictionary> = {
     resetMemo: "作り直す",
     memoCopiedTitle: "コピーしました",
     memoCopiedBody: "相談メモをコピーしました。窓口への連絡やメモアプリに貼り付けて使えます。",
+    memoResetTitle: "作り直しました",
+    memoResetBody: "相談メモを現在のプロフィールと制度情報から作り直しました。",
     eligibility: "対象となる可能性がある人",
     deadline: "申請期限",
     documents: "必要書類",
@@ -233,6 +235,9 @@ const dictionaries: Record<Language, Dictionary> = {
     memoCopiedTitle: "Copied",
     memoCopiedBody:
       "The consultation memo has been copied. You can paste it into a message or notes app.",
+    memoResetTitle: "Memo reset",
+    memoResetBody:
+      "The memo has been rebuilt from your current profile and this support program.",
     eligibility: "Who may qualify",
     deadline: "Deadline",
     documents: "Documents",
