@@ -95,6 +95,9 @@ const dictionaries: Record<Language, Dictionary> = {
     eligibility: "対象となる可能性がある人",
     deadline: "申請期限",
     documents: "必要書類",
+    documentsReady: "準備済み",
+    documentChecklistHint:
+      "準備できた書類にチェックを入れられます。チェックはこの端末に保存されます。",
     apply: "申請方法",
     officialSite: "公式ページを開く",
     aiNotice:
@@ -218,6 +221,9 @@ const dictionaries: Record<Language, Dictionary> = {
     eligibility: "Who may qualify",
     deadline: "Deadline",
     documents: "Documents",
+    documentsReady: "ready",
+    documentChecklistHint:
+      "Check off documents as you prepare them. Your checks are saved on this device.",
     apply: "How to apply",
     officialSite: "Open official page",
     aiNotice:

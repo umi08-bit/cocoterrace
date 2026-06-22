@@ -45,6 +45,7 @@ type ConcernId =
   | "foreign"
   | "urgent";
 const PROFILE_STORAGE_KEY = "cocoterrace:user-profile:v1";
+const DOCUMENT_CHECKLIST_STORAGE_PREFIX = "cocoterrace:document-checklist:";
 
 const concernCards: {
   id: ConcernId;
@@ -871,6 +872,50 @@ function ProgramDetail({
   const documents =
     language === "ja" ? program.requiredDocumentsJa : program.requiredDocumentsEn;
   const match = getMatchLevel(program, profile);
+  const [checkedDocuments, setCheckedDocuments] = useState<number[]>([]);
+  const checkedCount = checkedDocuments.filter((index) => index < documents.length).length;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadChecklist() {
+      try {
+        const savedChecklist = await AsyncStorage.getItem(
+          `${DOCUMENT_CHECKLIST_STORAGE_PREFIX}${program.id}`
+        );
+        if (!isMounted) return;
+
+        if (savedChecklist) {
+          const parsed = JSON.parse(savedChecklist);
+          setCheckedDocuments(Array.isArray(parsed) ? parsed : []);
+        } else {
+          setCheckedDocuments([]);
+        }
+      } catch {
+        if (isMounted) {
+          setCheckedDocuments([]);
+        }
+      }
+    }
+
+    loadChecklist();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [program.id]);
+
+  async function toggleDocument(index: number) {
+    const next = checkedDocuments.includes(index)
+      ? checkedDocuments.filter((item) => item !== index)
+      : [...checkedDocuments, index].sort((a, b) => a - b);
+
+    setCheckedDocuments(next);
+    await AsyncStorage.setItem(
+      `${DOCUMENT_CHECKLIST_STORAGE_PREFIX}${program.id}`,
+      JSON.stringify(next)
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -900,7 +945,13 @@ function ProgramDetail({
           title={t(language, "deadline")}
           body={program.deadline ?? t(language, "noDeadline")}
         />
-        <DetailBlock title={t(language, "documents")} body={documents.join("\n")} />
+        <DocumentChecklist
+          language={language}
+          documents={documents}
+          checkedDocuments={checkedDocuments}
+          checkedCount={checkedCount}
+          onToggle={toggleDocument}
+        />
         <DetailBlock title={t(language, "apply")} body={method} />
         <DetailBlock
           title={t(language, "source")}
@@ -1042,6 +1093,52 @@ function DetailBlock({ title, body }: { title: string; body: string }) {
     <View style={styles.detailBlock}>
       <Text style={styles.detailBlockTitle}>{title}</Text>
       <Text style={styles.detailBlockBody}>{body}</Text>
+    </View>
+  );
+}
+
+function DocumentChecklist({
+  language,
+  documents,
+  checkedDocuments,
+  checkedCount,
+  onToggle
+}: {
+  language: Language;
+  documents: string[];
+  checkedDocuments: number[];
+  checkedCount: number;
+  onToggle: (index: number) => void;
+}) {
+  return (
+    <View style={styles.detailBlock}>
+      <View style={styles.checklistHeader}>
+        <View>
+          <Text style={styles.detailBlockTitle}>{t(language, "documents")}</Text>
+          <Text style={styles.checklistProgress}>
+            {checkedCount}/{documents.length} {t(language, "documentsReady")}
+          </Text>
+        </View>
+        <Ionicons name="document-text-outline" size={22} color="#2E6B4F" />
+      </View>
+      <Text style={styles.checklistHint}>{t(language, "documentChecklistHint")}</Text>
+      {documents.map((document, index) => {
+        const checked = checkedDocuments.includes(index);
+        return (
+          <Pressable
+            key={`${document}-${index}`}
+            style={[styles.checklistItem, checked && styles.checklistItemChecked]}
+            onPress={() => onToggle(index)}
+          >
+            <View style={[styles.checkCircle, checked && styles.checkCircleChecked]}>
+              {checked && <Ionicons name="checkmark" size={17} color="#FFFFFF" />}
+            </View>
+            <Text style={[styles.checklistText, checked && styles.checklistTextChecked]}>
+              {document}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -2035,6 +2132,64 @@ const styles = StyleSheet.create({
     color: "#16352A",
     fontSize: 15,
     lineHeight: 22
+  },
+  checklistHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 12
+  },
+  checklistProgress: {
+    color: "#52635A",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 8
+  },
+  checklistHint: {
+    color: "#52635A",
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 10
+  },
+  checklistItem: {
+    minHeight: 48,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDE6E0",
+    backgroundColor: "#F9FCFA",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8
+  },
+  checklistItemChecked: {
+    backgroundColor: "#EAF4EE",
+    borderColor: "#B9D3C2"
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#9DB2A5",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  checkCircleChecked: {
+    backgroundColor: "#2E6B4F",
+    borderColor: "#2E6B4F"
+  },
+  checklistText: {
+    flex: 1,
+    color: "#16352A",
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "700"
+  },
+  checklistTextChecked: {
+    color: "#2E6B4F"
   },
   primaryButton: {
     height: 52,
