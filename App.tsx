@@ -1119,7 +1119,6 @@ function DocumentChecklist({
             {checkedCount}/{documents.length} {t(language, "documentsReady")}
           </Text>
         </View>
-        <Ionicons name="document-text-outline" size={22} color="#2E6B4F" />
       </View>
       <Text style={styles.checklistHint}>{t(language, "documentChecklistHint")}</Text>
       {documents.map((document, index) => {
