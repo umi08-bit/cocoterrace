@@ -959,6 +959,7 @@ function ProgramDetail({
     language === "ja" ? program.requiredDocumentsJa : program.requiredDocumentsEn;
   const match = getMatchLevel(program, profile);
   const matchReasons = getMatchReasons(program, profile, language);
+  const nextAction = getProgramNextAction(program, language);
   const [checkedDocuments, setCheckedDocuments] = useState<number[]>([]);
   const checkedCount = checkedDocuments.filter((index) => index < documents.length).length;
   const generatedMemo = createConsultationMemo({
@@ -1094,21 +1095,10 @@ function ProgramDetail({
         </Pressable>
         <Text style={styles.summary}>{summary}</Text>
         <MatchReasonList language={language} reasons={matchReasons} detailed />
-        <View style={styles.noticeBand}>
-          <Ionicons name="information-circle-outline" size={21} color="#2E6B4F" />
-          <Text style={styles.noticeText}>{t(language, "aiNotice")}</Text>
-        </View>
 
         <DetailBlock title={t(language, "eligibility")} body={eligibility} />
         <DetailBlock title={t(language, "benefit")} body={benefit} />
-        <ConsultationMemo
-          language={language}
-          memo={consultationMemo}
-          onChange={updateConsultationMemo}
-          onCopy={copyConsultationMemo}
-          onUseTemplate={applyConsultationMemoTemplate}
-          onClear={clearConsultationMemo}
-        />
+        <DetailNextAction language={language} action={nextAction} />
         <DetailBlock
           title={t(language, "deadline")}
           body={program.deadline ?? t(language, "noDeadline")}
@@ -1120,7 +1110,19 @@ function ProgramDetail({
           checkedCount={checkedCount}
           onToggle={toggleDocument}
         />
+        <ConsultationMemo
+          language={language}
+          memo={consultationMemo}
+          onChange={updateConsultationMemo}
+          onCopy={copyConsultationMemo}
+          onUseTemplate={applyConsultationMemoTemplate}
+          onClear={clearConsultationMemo}
+        />
         <DetailBlock title={t(language, "apply")} body={method} />
+        <View style={styles.noticeBand}>
+          <Ionicons name="information-circle-outline" size={21} color="#2E6B4F" />
+          <Text style={styles.noticeText}>{t(language, "aiNotice")}</Text>
+        </View>
         <DetailBlock
           title={t(language, "source")}
           body={`${program.organization}\n${program.sourceUrl}`}
@@ -1276,6 +1278,28 @@ function DetailBlock({ title, body }: { title: string; body: string }) {
     <View style={styles.detailBlock}>
       <Text style={styles.detailBlockTitle}>{title}</Text>
       <Text style={styles.detailBlockBody}>{body}</Text>
+    </View>
+  );
+}
+
+function DetailNextAction({
+  language,
+  action
+}: {
+  language: Language;
+  action: string;
+}) {
+  return (
+    <View style={styles.detailNextAction}>
+      <View style={styles.detailNextActionIcon}>
+        <Ionicons name="flag-outline" size={20} color="#FFFFFF" />
+      </View>
+      <View style={styles.detailNextActionTextWrap}>
+        <Text style={styles.detailNextActionLabel}>
+          {language === "ja" ? "次にすること" : "Next step"}
+        </Text>
+        <Text style={styles.detailNextActionText}>{action}</Text>
+      </View>
     </View>
   );
 }
@@ -2913,6 +2937,40 @@ const styles = StyleSheet.create({
     color: "#16352A",
     fontSize: 15,
     lineHeight: 22
+  },
+  detailNextAction: {
+    backgroundColor: "#FFF8EA",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#EAD8AE",
+    padding: 14,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10
+  },
+  detailNextActionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    backgroundColor: "#A36B12",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  detailNextActionTextWrap: {
+    flex: 1
+  },
+  detailNextActionLabel: {
+    color: "#7A5A19",
+    fontSize: 13,
+    fontWeight: "900",
+    marginBottom: 4
+  },
+  detailNextActionText: {
+    color: "#473813",
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: "800"
   },
   checklistHeader: {
     flexDirection: "row",
