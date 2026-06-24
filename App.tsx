@@ -823,6 +823,7 @@ function ProfileForm({
     <>
       <ChoiceRow
         label={t(language, "region")}
+        hint={profileHint(language, "region")}
         choices={SUPPORTED_REGIONS}
         value={profile.region}
         language={language}
@@ -832,6 +833,7 @@ function ProfileForm({
       />
       <ChoiceRow
         label={t(language, "household")}
+        hint={profileHint(language, "household")}
         choices={["single_parent", "two_parent", "single"]}
         value={profile.household}
         language={language}
@@ -864,6 +866,7 @@ function ProfileForm({
       />
       <ToggleRow
         label={t(language, "children")}
+        hint={profileHint(language, "children")}
         value={profile.hasChildren}
         language={language}
         onChange={(hasChildren) =>
@@ -882,6 +885,7 @@ function ProfileForm({
       {profile.hasChildren && (
         <CountRow
           label={t(language, "childCount")}
+          hint={profileHint(language, "childCount")}
           value={profile.childrenCount}
           suffix={t(language, "people")}
           onChange={(childrenCount) =>
@@ -896,6 +900,7 @@ function ProfileForm({
       )}
       <ToggleRow
         label={t(language, "disabilityStatus")}
+        hint={profileHint(language, "disabilityStatus")}
         value={profile.hasDisability}
         language={language}
         onChange={(hasDisability) =>
@@ -904,6 +909,7 @@ function ProfileForm({
       />
       <ToggleRow
         label={t(language, "foreignSupport")}
+        hint={profileHint(language, "foreignSupport")}
         value={profile.wantsForeignSupport}
         language={language}
         onChange={(wantsForeignSupport) =>
@@ -912,6 +918,7 @@ function ProfileForm({
       />
       <ToggleRow
         label={t(language, "notifications")}
+        hint={profileHint(language, "notifications")}
         value={profile.notificationsEnabled}
         language={language}
         onChange={(notificationsEnabled) =>
@@ -1150,6 +1157,7 @@ function ProgramCard({
   const summary = language === "ja" ? program.summaryJa : program.summaryEn;
   const matchReasons = getMatchReasons(program, profile, language);
   const visibleReasons = compact ? matchReasons.slice(0, 1) : matchReasons.slice(0, 2);
+  const nextAction = getProgramNextAction(program, language);
 
   return (
     <Pressable style={styles.card} onPress={onOpen}>
@@ -1160,6 +1168,15 @@ function ProgramCard({
       <Text style={styles.cardTitle}>{title}</Text>
       {!compact && <Text style={styles.cardBody}>{summary}</Text>}
       <MatchReasonList language={language} reasons={visibleReasons} />
+      <View style={styles.nextActionBox}>
+        <Ionicons name="arrow-forward-circle-outline" size={18} color="#2E6B4F" />
+        <View style={styles.nextActionTextWrap}>
+          <Text style={styles.nextActionLabel}>
+            {language === "ja" ? "次にすること" : "Next step"}
+          </Text>
+          <Text style={styles.nextActionText}>{nextAction}</Text>
+        </View>
+      </View>
       <View style={styles.cardFooter}>
         <Text style={styles.deadline}>
           {t(language, "deadline")}: {program.deadline ?? t(language, "noDeadline")}
@@ -1503,12 +1520,14 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
 
 function ChoiceRow<T extends string>({
   label,
+  hint,
   choices,
   value,
   language,
   onChange
 }: {
   label: string;
+  hint?: string;
   choices: readonly T[];
   value: T;
   language: Language;
@@ -1517,6 +1536,7 @@ function ChoiceRow<T extends string>({
   return (
     <View style={styles.profileBlock}>
       <Text style={styles.profileLabel}>{label}</Text>
+      {hint && <Text style={styles.profileDescription}>{hint}</Text>}
       <View style={styles.choiceWrap}>
         {choices.map((choice) => (
           <Pressable
@@ -1538,11 +1558,13 @@ function ChoiceRow<T extends string>({
 
 function ToggleRow({
   label,
+  hint,
   value,
   language,
   onChange
 }: {
   label: string;
+  hint?: string;
   value: boolean;
   language: Language;
   onChange: (value: boolean) => void;
@@ -1551,6 +1573,7 @@ function ToggleRow({
     <View style={styles.profileRow}>
       <View>
         <Text style={styles.profileLabel}>{label}</Text>
+        {hint && <Text style={styles.profileDescription}>{hint}</Text>}
         <Text style={styles.profileHint}>{value ? t(language, "yes") : t(language, "no")}</Text>
       </View>
       <Switch
@@ -1574,11 +1597,13 @@ function EmptyState({ text, compact }: { text: string; compact?: boolean }) {
 
 function CountRow({
   label,
+  hint,
   value,
   suffix,
   onChange
 }: {
   label: string;
+  hint?: string;
   value: number;
   suffix: string;
   onChange: (value: number) => void;
@@ -1590,6 +1615,7 @@ function CountRow({
     <View style={styles.profileRow}>
       <View>
         <Text style={styles.profileLabel}>{label}</Text>
+        {hint && <Text style={styles.profileDescription}>{hint}</Text>}
         <Text style={styles.profileValue}>
           {value >= 6 ? "6+" : value} {suffix}
         </Text>
@@ -1891,6 +1917,65 @@ function formatSupportNotificationBody(
   }
 
   return `${likelyCount} support programs may fit you. ${highCount} look highly relevant.`;
+}
+
+function profileHint(language: Language, key: string) {
+  const hints: Record<Language, Record<string, string>> = {
+    ja: {
+      region: "今住んでいる市を選ぶと、市と兵庫県の支援を表示します。",
+      household: "ひとり親は、子どもを育てている親が1人の家庭を想定しています。",
+      children: "子どもに関係する手当、医療、学校、相談先の表示に使います。",
+      childCount: "人数によって関係しそうな支援の見え方が変わります。",
+      disabilityStatus:
+        "本人だけでなく、子どもや同居家族に障がいがある場合もオンにしてください。",
+      foreignSupport:
+        "外国人住民向け情報や、外国語で相談できる窓口を表示します。",
+      notifications: "関係ありそうな支援を見逃さないための通知設定です。"
+    },
+    en: {
+      region: "Choose your city to show city and Hyogo Prefecture support.",
+      household:
+        "Single parent means a household where one parent is raising children.",
+      children:
+        "Used to show child-related allowances, medical support, school support, and consultation.",
+      childCount: "The number of children affects which support may appear.",
+      disabilityStatus:
+        "Turn this on if you, your child, or a family member has a disability.",
+      foreignSupport:
+        "Shows information for foreign residents and counters with language support.",
+      notifications: "Notification settings to help you avoid missing relevant support."
+    }
+  };
+
+  return hints[language][key] ?? "";
+}
+
+function getProgramNextAction(program: SupportProgram, language: Language) {
+  if (program.deadline && isDeadlineSoon(program.deadline)) {
+    return language === "ja"
+      ? "期限が近い可能性があります。詳細画面で期限と必要書類を確認しましょう。"
+      : "The deadline may be soon. Open details and check the deadline and documents.";
+  }
+
+  if (
+    program.category === "consultation" ||
+    program.category === "emergency" ||
+    program.tags.includes("consultation")
+  ) {
+    return language === "ja"
+      ? "詳細画面で相談先を確認し、相談メモを作ってから連絡しましょう。"
+      : "Open details, check the consultation counter, and prepare a memo before contacting them.";
+  }
+
+  if (program.requiredDocumentsJa.length > 0 || program.requiredDocumentsEn.length > 0) {
+    return language === "ja"
+      ? "詳細画面で対象条件と持っていくものを確認しましょう。"
+      : "Open details and check eligibility and what to bring.";
+  }
+
+  return language === "ja"
+    ? "詳細画面で公式ページと申請方法を確認しましょう。"
+    : "Open details and check the official page and application method.";
 }
 
 function createConsultationMemo({
@@ -2368,6 +2453,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: "700"
   },
+  nextActionBox: {
+    backgroundColor: "#FFF8EA",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#EAD8AE",
+    padding: 10,
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8
+  },
+  nextActionTextWrap: {
+    flex: 1
+  },
+  nextActionLabel: {
+    color: "#7A5A19",
+    fontSize: 12,
+    fontWeight: "900",
+    marginBottom: 2
+  },
+  nextActionText: {
+    color: "#473813",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700"
+  },
   cardFooter: {
     marginTop: 12,
     flexDirection: "row",
@@ -2564,6 +2675,13 @@ const styles = StyleSheet.create({
     color: "#52635A",
     fontSize: 13,
     marginBottom: 4
+  },
+  profileDescription: {
+    maxWidth: 260,
+    color: "#6A766F",
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 6
   },
   profileValue: {
     color: "#16352A",
