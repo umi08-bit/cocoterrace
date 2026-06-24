@@ -1571,17 +1571,19 @@ function ToggleRow({
 }) {
   return (
     <View style={styles.profileRow}>
-      <View>
+      <View style={styles.profileTextColumn}>
         <Text style={styles.profileLabel}>{label}</Text>
         {hint && <Text style={styles.profileDescription}>{hint}</Text>}
         <Text style={styles.profileHint}>{value ? t(language, "yes") : t(language, "no")}</Text>
       </View>
-      <Switch
-        value={value}
-        trackColor={{ true: "#8FC7A6", false: "#CED8D0" }}
-        thumbColor={value ? "#2E6B4F" : "#FFFFFF"}
-        onValueChange={onChange}
-      />
+      <View style={styles.switchColumn}>
+        <Switch
+          value={value}
+          trackColor={{ true: "#8FC7A6", false: "#CED8D0" }}
+          thumbColor={value ? "#2E6B4F" : "#FFFFFF"}
+          onValueChange={onChange}
+        />
+      </View>
     </View>
   );
 }
@@ -1613,14 +1615,14 @@ function CountRow({
 
   return (
     <View style={styles.profileRow}>
-      <View>
+      <View style={styles.profileTextColumn}>
         <Text style={styles.profileLabel}>{label}</Text>
         {hint && <Text style={styles.profileDescription}>{hint}</Text>}
         <Text style={styles.profileValue}>
           {value >= 6 ? "6+" : value} {suffix}
         </Text>
       </View>
-      <View style={styles.stepper}>
+      <View style={styles.stepperColumn}>
         <Pressable
           style={[styles.stepperButton, !canDecrease && styles.stepperDisabled]}
           onPress={() => canDecrease && onChange(value - 1)}
@@ -2654,14 +2656,26 @@ const styles = StyleSheet.create({
   profileRow: {
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 15,
+    paddingLeft: 16,
+    paddingRight: 14,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E0E7E2",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12
+    gap: 10
+  },
+  profileTextColumn: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: 8
+  },
+  switchColumn: {
+    width: 58,
+    alignItems: "flex-end",
+    justifyContent: "center"
   },
   profileBlock: {
     backgroundColor: "#FFFFFF",
@@ -2677,7 +2691,6 @@ const styles = StyleSheet.create({
     marginBottom: 4
   },
   profileDescription: {
-    maxWidth: 260,
     color: "#6A766F",
     fontSize: 12,
     lineHeight: 17,
@@ -2745,12 +2758,14 @@ const styles = StyleSheet.create({
   choiceTextActive: {
     color: "#FFFFFF"
   },
-  stepper: {
+  stepperColumn: {
+    width: 94,
     flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 8
   },
   stepperButton: {
-    width: 42,
+    width: 40,
     height: 42,
     borderRadius: 8,
     borderWidth: 1,
