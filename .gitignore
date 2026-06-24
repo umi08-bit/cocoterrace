@@ -2,6 +2,9 @@ node_modules/
 .expo/
 .npm-cache/
 .home/
+.env
+.env.local
+.env.*.local
 dist/
 dist-check*/
 web-build/

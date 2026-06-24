@@ -1,14 +1,26 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is not set.`);
+  }
+  return value;
+}
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDXrFl6zaiVRoXgPbwglUkY9ZkKI8ow75w",
-  authDomain: "cocoterrace-34750.firebaseapp.com",
-  projectId: "cocoterrace-34750",
-  storageBucket: "cocoterrace-34750.firebasestorage.app",
-  messagingSenderId: "367761776451",
-  appId: "1:367761776451:web:75fdf6320be621a43b19f6",
-  measurementId: "G-2SRY9D48WB"
+  apiKey: requiredEnv("EXPO_PUBLIC_FIREBASE_API_KEY"),
+  authDomain: requiredEnv("EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+  projectId: requiredEnv("EXPO_PUBLIC_FIREBASE_PROJECT_ID"),
+  storageBucket: requiredEnv("EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: requiredEnv("EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: requiredEnv("EXPO_PUBLIC_FIREBASE_APP_ID"),
+  measurementId: requiredEnv("EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID")
 };
 
 const app = initializeApp(firebaseConfig);
