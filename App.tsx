@@ -442,6 +442,7 @@ function HomeScreen({
           <ProgramCard
             key={`saved-${program.id}`}
             language={language}
+            profile={profile}
             program={program}
             match={match}
             compact
@@ -461,6 +462,7 @@ function HomeScreen({
           <ProgramCard
             key={program.id}
             language={language}
+            profile={profile}
             program={program}
             match={match}
             onOpen={() => onOpen(program)}
@@ -475,6 +477,7 @@ function HomeScreen({
         <ProgramCard
           key={`urgent-${program.id}`}
           language={language}
+          profile={profile}
           program={program}
           match={match}
           compact
@@ -586,6 +589,7 @@ function SearchScreen({
             <ProgramCard
               key={program.id}
               language={language}
+              profile={profile}
               program={program}
               match={match}
               compact
@@ -731,6 +735,7 @@ function AlertsScreen({
           <ProgramCard
             key={`notification-preview-${program.id}`}
             language={language}
+            profile={profile}
             program={program}
             match={match}
             compact
@@ -747,6 +752,7 @@ function AlertsScreen({
           <ProgramCard
             key={`deadline-${program.id}`}
             language={language}
+            profile={profile}
             program={program}
             match={match}
             compact
@@ -945,6 +951,7 @@ function ProgramDetail({
   const documents =
     language === "ja" ? program.requiredDocumentsJa : program.requiredDocumentsEn;
   const match = getMatchLevel(program, profile);
+  const matchReasons = getMatchReasons(program, profile, language);
   const [checkedDocuments, setCheckedDocuments] = useState<number[]>([]);
   const checkedCount = checkedDocuments.filter((index) => index < documents.length).length;
   const generatedMemo = createConsultationMemo({
@@ -1079,6 +1086,7 @@ function ProgramDetail({
           </Text>
         </Pressable>
         <Text style={styles.summary}>{summary}</Text>
+        <MatchReasonList language={language} reasons={matchReasons} detailed />
         <View style={styles.noticeBand}>
           <Ionicons name="information-circle-outline" size={21} color="#2E6B4F" />
           <Text style={styles.noticeText}>{t(language, "aiNotice")}</Text>
@@ -1125,12 +1133,14 @@ function ProgramDetail({
 
 function ProgramCard({
   language,
+  profile,
   program,
   match,
   compact,
   onOpen
 }: {
   language: Language;
+  profile: UserProfile;
   program: SupportProgram;
   match: MatchLevel;
   compact?: boolean;
@@ -1138,6 +1148,8 @@ function ProgramCard({
 }) {
   const title = language === "ja" ? program.titleJa : program.titleEn;
   const summary = language === "ja" ? program.summaryJa : program.summaryEn;
+  const matchReasons = getMatchReasons(program, profile, language);
+  const visibleReasons = compact ? matchReasons.slice(0, 1) : matchReasons.slice(0, 2);
 
   return (
     <Pressable style={styles.card} onPress={onOpen}>
@@ -1147,6 +1159,7 @@ function ProgramCard({
       </View>
       <Text style={styles.cardTitle}>{title}</Text>
       {!compact && <Text style={styles.cardBody}>{summary}</Text>}
+      <MatchReasonList language={language} reasons={visibleReasons} />
       <View style={styles.cardFooter}>
         <Text style={styles.deadline}>
           {t(language, "deadline")}: {program.deadline ?? t(language, "noDeadline")}
@@ -1246,6 +1259,35 @@ function DetailBlock({ title, body }: { title: string; body: string }) {
     <View style={styles.detailBlock}>
       <Text style={styles.detailBlockTitle}>{title}</Text>
       <Text style={styles.detailBlockBody}>{body}</Text>
+    </View>
+  );
+}
+
+function MatchReasonList({
+  language,
+  reasons,
+  detailed
+}: {
+  language: Language;
+  reasons: string[];
+  detailed?: boolean;
+}) {
+  if (reasons.length === 0) return null;
+
+  return (
+    <View style={[styles.matchReasonBox, detailed && styles.matchReasonBoxDetailed]}>
+      <View style={styles.matchReasonHeader}>
+        <Ionicons name="bulb-outline" size={16} color="#2E6B4F" />
+        <Text style={styles.matchReasonTitle}>
+          {language === "ja" ? "表示された理由" : "Why this appears"}
+        </Text>
+      </View>
+      {reasons.map((reason) => (
+        <View key={reason} style={styles.matchReasonItem}>
+          <View style={styles.matchReasonDot} />
+          <Text style={styles.matchReasonText}>{reason}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -1658,6 +1700,85 @@ function getMatchLevel(program: SupportProgram, profile: UserProfile): MatchLeve
   if (score >= 4) return "high";
   if (score >= 2) return "needs_check";
   return "unlikely";
+}
+
+function getMatchReasons(
+  program: SupportProgram,
+  profile: UserProfile,
+  language: Language
+) {
+  const reasons: string[] = [];
+
+  if (program.region === profile.region) {
+    reasons.push(
+      language === "ja"
+        ? `お住まいの地域（${profile.region}）に関係する支援です。`
+        : `This support is related to your area (${profile.region}).`
+    );
+  } else if (program.region === "兵庫県") {
+    reasons.push(
+      language === "ja"
+        ? "兵庫県内に住む人に関係する可能性があります。"
+        : "This may be relevant for residents in Hyogo Prefecture."
+    );
+  }
+
+  if (
+    profile.hasChildren &&
+    profile.childrenCount > 0 &&
+    program.tags.includes("child_support")
+  ) {
+    reasons.push(
+      language === "ja"
+        ? `子どもが${profile.childrenCount}人いるプロフィールに関係する可能性があります。`
+        : `This may be relevant because your profile includes ${profile.childrenCount} child/children.`
+    );
+  }
+
+  if (
+    profile.household === "single_parent" &&
+    program.tags.includes("single_parent")
+  ) {
+    reasons.push(
+      language === "ja"
+        ? "ひとり親家庭向けの条件に関係する可能性があります。"
+        : "This may be relevant to single-parent household support."
+    );
+  }
+
+  if (profile.hasDisability && program.tags.includes("disability_support")) {
+    reasons.push(
+      language === "ja"
+        ? "障がいに関係する支援を確認したい設定になっています。"
+        : "Your profile says you want to check disability-related support."
+    );
+  }
+
+  if (profile.wantsForeignSupport && program.tags.includes("foreign_resident")) {
+    reasons.push(
+      language === "ja"
+        ? "外国人住民向け、または多言語対応の支援に関係する可能性があります。"
+        : "This may be relevant to foreign resident or multilingual support."
+    );
+  }
+
+  if (program.tags.includes("low_income")) {
+    reasons.push(
+      language === "ja"
+        ? "生活費や収入の不安に関係する支援として確認できます。"
+        : "This can be checked as support related to income or living-cost worries."
+    );
+  }
+
+  if (program.tags.includes("general_support") && reasons.length < 2) {
+    reasons.push(
+      language === "ja"
+        ? "幅広い生活相談や福祉相談につながる支援です。"
+        : "This support can connect you to general welfare or daily-life consultation."
+    );
+  }
+
+  return reasons;
 }
 
 function getConcernSearchMatchLevel(
@@ -2202,6 +2323,50 @@ const styles = StyleSheet.create({
     color: "#52635A",
     fontSize: 14,
     lineHeight: 20
+  },
+  matchReasonBox: {
+    backgroundColor: "#F3F8F5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#DDEBE2",
+    padding: 10,
+    gap: 6,
+    marginTop: 10,
+    marginBottom: 2
+  },
+  matchReasonBoxDetailed: {
+    marginTop: -4,
+    marginBottom: 16,
+    padding: 12
+  },
+  matchReasonHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6
+  },
+  matchReasonTitle: {
+    color: "#2E6B4F",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  matchReasonItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 7
+  },
+  matchReasonDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#79A889",
+    marginTop: 7
+  },
+  matchReasonText: {
+    flex: 1,
+    color: "#2A4439",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700"
   },
   cardFooter: {
     marginTop: 12,
