@@ -13,3 +13,5 @@ expo-server.err.log
 npm-debug.log*
 firebase-service-account*.json
 secrets/
+docs/cocoterrace_school_presentation.pptx
+docs/cocoterrace_presentation_script.txt
