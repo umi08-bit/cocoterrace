@@ -1,4 +1,4 @@
-export type Language = "ja" | "en";
+export type Language = "ja" | "easy_ja" | "en";
 
 export type MatchLevel = "high" | "needs_check" | "unlikely";
 

@@ -355,10 +355,6 @@ export default function App() {
             {t(language, `programData_${programDataSource}`)}
           </Text>
         </View>
-        <SegmentedLanguage
-          language={language}
-          onChange={(next) => setProfile(normalizeProfile({ ...profile, language: next }))}
-        />
       </View>
 
       {tab === "home" && (
@@ -822,6 +818,16 @@ function ProfileForm({
   return (
     <>
       <ChoiceRow
+        label={t(language, "language")}
+        hint={profileHint(language, "language")}
+        choices={["ja", "easy_ja", "en"]}
+        value={profile.language}
+        language={language}
+        onChange={(nextLanguage) =>
+          onChange(normalizeProfile({ ...profile, language: nextLanguage }))
+        }
+      />
+      <ChoiceRow
         label={t(language, "region")}
         hint={profileHint(language, "region")}
         choices={SUPPORTED_REGIONS}
@@ -948,15 +954,15 @@ function ProgramDetail({
   onToggleSaved: () => void;
   onBack: () => void;
 }) {
-  const title = language === "ja" ? program.titleJa : program.titleEn;
-  const summary = language === "ja" ? program.summaryJa : program.summaryEn;
+  const title = language === "en" ? program.titleEn : program.titleJa;
+  const summary = language === "en" ? program.summaryEn : program.summaryJa;
   const eligibility =
-    language === "ja" ? program.eligibilityJa : program.eligibilityEn;
-  const benefit = language === "ja" ? program.benefitJa : program.benefitEn;
+    language === "en" ? program.eligibilityEn : program.eligibilityJa;
+  const benefit = language === "en" ? program.benefitEn : program.benefitJa;
   const method =
-    language === "ja" ? program.applicationMethodJa : program.applicationMethodEn;
+    language === "en" ? program.applicationMethodEn : program.applicationMethodJa;
   const documents =
-    language === "ja" ? program.requiredDocumentsJa : program.requiredDocumentsEn;
+    language === "en" ? program.requiredDocumentsEn : program.requiredDocumentsJa;
   const match = getMatchLevel(program, profile);
   const matchReasons = getMatchReasons(program, profile, language);
   const nextAction = getProgramNextAction(program, language);
@@ -1155,8 +1161,8 @@ function ProgramCard({
   compact?: boolean;
   onOpen: () => void;
 }) {
-  const title = language === "ja" ? program.titleJa : program.titleEn;
-  const summary = language === "ja" ? program.summaryJa : program.summaryEn;
+  const title = language === "en" ? program.titleEn : program.titleJa;
+  const summary = language === "en" ? program.summaryEn : program.summaryJa;
   const matchReasons = getMatchReasons(program, profile, language);
   const visibleReasons = compact ? matchReasons.slice(0, 1) : matchReasons.slice(0, 2);
   const nextAction = getProgramNextAction(program, language);
@@ -1174,7 +1180,7 @@ function ProgramCard({
         <Ionicons name="arrow-forward-circle-outline" size={18} color="#2E6B4F" />
         <View style={styles.nextActionTextWrap}>
           <Text style={styles.nextActionLabel}>
-            {language === "ja" ? "次にすること" : "Next step"}
+            {t(language, "detailNextActionLabel")}
           </Text>
           <Text style={styles.nextActionText}>{nextAction}</Text>
         </View>
@@ -1198,7 +1204,7 @@ function AlertRow({
   program: SupportProgram;
   onReminder: () => void;
 }) {
-  const title = language === "ja" ? program.titleJa : program.titleEn;
+  const title = language === "en" ? program.titleEn : program.titleJa;
   return (
     <View style={styles.alertRow}>
       <View style={styles.alertIcon}>
@@ -1296,7 +1302,7 @@ function DetailNextAction({
       </View>
       <View style={styles.detailNextActionTextWrap}>
         <Text style={styles.detailNextActionLabel}>
-          {language === "ja" ? "次にすること" : "Next step"}
+          {t(language, "detailNextActionLabel")}
         </Text>
         <Text style={styles.detailNextActionText}>{action}</Text>
       </View>
@@ -1320,7 +1326,7 @@ function MatchReasonList({
       <View style={styles.matchReasonHeader}>
         <Ionicons name="bulb-outline" size={16} color="#2E6B4F" />
         <Text style={styles.matchReasonTitle}>
-          {language === "ja" ? "表示された理由" : "Why this appears"}
+          {t(language, "matchReasonTitle")}
         </Text>
       </View>
       {reasons.map((reason) => (
@@ -1672,35 +1678,6 @@ function CountRow({
   );
 }
 
-function SegmentedLanguage({
-  language,
-  onChange
-}: {
-  language: Language;
-  onChange: (language: Language) => void;
-}) {
-  return (
-    <View style={styles.languageSwitch}>
-      {(["ja", "en"] as const).map((item) => (
-        <Pressable
-          key={item}
-          style={[styles.languageOption, language === item && styles.languageActive]}
-          onPress={() => onChange(item)}
-        >
-          <Text
-            style={[
-              styles.languageText,
-              language === item && styles.languageTextActive
-            ]}
-          >
-            {item.toUpperCase()}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
 function Pill({ text, tone }: { text: string; tone: MatchLevel | "soft" }) {
   return (
     <View style={[styles.pill, pillStyle(tone)]}>
@@ -1760,16 +1737,21 @@ function getMatchReasons(
   language: Language
 ) {
   const reasons: string[] = [];
+  const easy = language === "easy_ja";
 
   if (program.region === profile.region) {
     reasons.push(
-      language === "ja"
+      easy
+        ? `あなたの 住んでいるところ（${profile.region}）に かんけいします。`
+        : language === "ja"
         ? `お住まいの地域（${profile.region}）に関係する支援です。`
         : `This support is related to your area (${profile.region}).`
     );
   } else if (program.region === "兵庫県") {
     reasons.push(
-      language === "ja"
+      easy
+        ? "兵庫県に 住んでいる人に かんけいする 可能性があります。"
+        : language === "ja"
         ? "兵庫県内に住む人に関係する可能性があります。"
         : "This may be relevant for residents in Hyogo Prefecture."
     );
@@ -1781,7 +1763,9 @@ function getMatchReasons(
     program.tags.includes("child_support")
   ) {
     reasons.push(
-      language === "ja"
+      easy
+        ? `子どもが ${profile.childrenCount}人 いるため、かんけいする 可能性があります。`
+        : language === "ja"
         ? `子どもが${profile.childrenCount}人いるプロフィールに関係する可能性があります。`
         : `This may be relevant because your profile includes ${profile.childrenCount} child/children.`
     );
@@ -1792,7 +1776,9 @@ function getMatchReasons(
     program.tags.includes("single_parent")
   ) {
     reasons.push(
-      language === "ja"
+      easy
+        ? "ひとり親家庭むけの しえんに かんけいする 可能性があります。"
+        : language === "ja"
         ? "ひとり親家庭向けの条件に関係する可能性があります。"
         : "This may be relevant to single-parent household support."
     );
@@ -1800,7 +1786,9 @@ function getMatchReasons(
 
   if (profile.hasDisability && program.tags.includes("disability_support")) {
     reasons.push(
-      language === "ja"
+      easy
+        ? "しょうがいに かんけいする しえんを みる 設定です。"
+        : language === "ja"
         ? "障がいに関係する支援を確認したい設定になっています。"
         : "Your profile says you want to check disability-related support."
     );
@@ -1808,7 +1796,9 @@ function getMatchReasons(
 
   if (profile.wantsForeignSupport && program.tags.includes("foreign_resident")) {
     reasons.push(
-      language === "ja"
+      easy
+        ? "外国人むけ、または 外国語で 相談できる しえんです。"
+        : language === "ja"
         ? "外国人住民向け、または多言語対応の支援に関係する可能性があります。"
         : "This may be relevant to foreign resident or multilingual support."
     );
@@ -1816,7 +1806,9 @@ function getMatchReasons(
 
   if (program.tags.includes("low_income")) {
     reasons.push(
-      language === "ja"
+      easy
+        ? "生活のお金が ふあんな ときに かくにんできます。"
+        : language === "ja"
         ? "生活費や収入の不安に関係する支援として確認できます。"
         : "This can be checked as support related to income or living-cost worries."
     );
@@ -1824,7 +1816,9 @@ function getMatchReasons(
 
   if (program.tags.includes("general_support") && reasons.length < 2) {
     reasons.push(
-      language === "ja"
+      easy
+        ? "生活や ふくしの 相談に つながる しえんです。"
+        : language === "ja"
         ? "幅広い生活相談や福祉相談につながる支援です。"
         : "This support can connect you to general welfare or daily-life consultation."
     );
@@ -1938,6 +1932,10 @@ function formatSupportNotificationBody(
   likelyCount: number,
   highCount: number
 ) {
+  if (language === "easy_ja") {
+    return `あなたに かんけい ありそうな しえんが ${likelyCount}件 あります。つかえる 可能性が 高いものは ${highCount}件です。`;
+  }
+
   if (language === "ja") {
     return `関係ありそうな支援が${likelyCount}件あります。可能性が高い支援は${highCount}件です。`;
   }
@@ -1948,6 +1946,8 @@ function formatSupportNotificationBody(
 function profileHint(language: Language, key: string) {
   const hints: Record<Language, Record<string, string>> = {
     ja: {
+      language:
+        "日本語、やさしい日本語、英語から画面の表示を選べます。",
       region: "今住んでいる市を選ぶと、市と兵庫県の支援を表示します。",
       household: "ひとり親は、子どもを育てている親が1人の家庭を想定しています。",
       children: "子どもに関係する手当、医療、学校、相談先の表示に使います。",
@@ -1958,7 +1958,22 @@ function profileHint(language: Language, key: string) {
         "外国人住民向け情報や、外国語で相談できる窓口を表示します。",
       notifications: "関係ありそうな支援を見逃さないための通知設定です。"
     },
+    easy_ja: {
+      language:
+        "画面の ことばを、日本語、やさしい日本語、Englishから えらべます。",
+      region: "今 住んでいる 市を えらぶと、市と 兵庫県の しえんを 出します。",
+      household: "ひとり親は、子どもを 育てている 親が 1人の 家庭です。",
+      children: "子どもの 手当、医療、学校、相談先を 出すために 使います。",
+      childCount: "子どもの 人数で、出てくる しえんが かわることが あります。",
+      disabilityStatus:
+        "本人、子ども、同居している 家族に しょうがいが あるときも オンにしてください。",
+      foreignSupport:
+        "外国人むけ情報や、外国語で 相談できる まどぐちを 出します。",
+      notifications: "かんけい ありそうな しえんを 見のがさないための 設定です。"
+    },
     en: {
+      language:
+        "Choose Japanese, Easy Japanese, or English for the app interface.",
       region: "Choose your city to show city and Hyogo Prefecture support.",
       household:
         "Single parent means a household where one parent is raising children.",
@@ -1978,6 +1993,10 @@ function profileHint(language: Language, key: string) {
 
 function getProgramNextAction(program: SupportProgram, language: Language) {
   if (program.deadline && isDeadlineSoon(program.deadline)) {
+    if (language === "easy_ja") {
+      return "しめきりが 近いかもしれません。くわしい画面で、しめきりと もっていくものを かくにんしましょう。";
+    }
+
     return language === "ja"
       ? "期限が近い可能性があります。詳細画面で期限と必要書類を確認しましょう。"
       : "The deadline may be soon. Open details and check the deadline and documents.";
@@ -1988,15 +2007,27 @@ function getProgramNextAction(program: SupportProgram, language: Language) {
     program.category === "emergency" ||
     program.tags.includes("consultation")
   ) {
+    if (language === "easy_ja") {
+      return "くわしい画面で 相談するところを かくにんし、そうだんメモを 作ってから 連絡しましょう。";
+    }
+
     return language === "ja"
       ? "詳細画面で相談先を確認し、相談メモを作ってから連絡しましょう。"
       : "Open details, check the consultation counter, and prepare a memo before contacting them.";
   }
 
   if (program.requiredDocumentsJa.length > 0 || program.requiredDocumentsEn.length > 0) {
+    if (language === "easy_ja") {
+      return "くわしい画面で、つかえる人と もっていくものを かくにんしましょう。";
+    }
+
     return language === "ja"
       ? "詳細画面で対象条件と持っていくものを確認しましょう。"
       : "Open details and check eligibility and what to bring.";
+  }
+
+  if (language === "easy_ja") {
+    return "くわしい画面で、ただしい情報と もうしこみの しかたを かくにんしましょう。";
   }
 
   return language === "ja"
@@ -2015,26 +2046,26 @@ function createConsultationMemo({
   program: SupportProgram;
   documents: string[];
 }) {
-  const title = language === "ja" ? program.titleJa : program.titleEn;
+  const title = language === "en" ? program.titleEn : program.titleJa;
   const childLine = profile.hasChildren
-    ? language === "ja"
+    ? language !== "en"
       ? `子どもは${profile.childrenCount}人です。`
       : `I have ${profile.childrenCount} child/children.`
-    : language === "ja"
+    : language !== "en"
       ? "子どもはいません。"
       : "I do not have children.";
   const disabilityLine = profile.hasDisability
-    ? language === "ja"
+    ? language !== "en"
       ? "障がいに関係する支援も確認したいです。"
       : "I also want to ask about disability-related support."
     : null;
   const foreignLine = profile.wantsForeignSupport
-    ? language === "ja"
+    ? language !== "en"
       ? "外国人住民向け、または外国語で相談できる支援も確認したいです。"
       : "I also want to ask about support for foreign residents or language help."
     : null;
 
-  if (language === "ja") {
+  if (language !== "en") {
     return [
       "相談したいこと:",
       `${title}について、対象になる可能性があるか確認したいです。`,
@@ -2085,7 +2116,7 @@ function createConsultationMemo({
 
 function parseConsultationMemo(memo: string, language: Language) {
   const titles: string[] =
-    language === "ja"
+    language !== "en"
       ? [
           "相談したいこと:",
           "伝えたい状況:",
@@ -2099,7 +2130,7 @@ function parseConsultationMemo(memo: string, language: Language) {
           "Documents I may bring:"
         ];
   const fallbackTitles: string[] =
-    language === "ja"
+    language !== "en"
       ? ["相談したいこと", "伝えたい状況", "確認したいこと", "持参予定の書類"]
       : ["What I want to ask", "My situation", "Questions", "Documents I may bring"];
   const lines = memo.split("\n");
@@ -2137,7 +2168,7 @@ function parseConsultationMemo(memo: string, language: Language) {
 
 function createBlankConsultationMemoSections(language: Language) {
   const titles =
-    language === "ja"
+    language !== "en"
       ? ["相談したいこと", "伝えたい状況", "確認したいこと", "持参予定の書類"]
       : ["What I want to ask", "My situation", "Questions", "Documents I may bring"];
 
@@ -2800,28 +2831,6 @@ const styles = StyleSheet.create({
   },
   stepperDisabled: {
     backgroundColor: "#EEF2EF"
-  },
-  languageSwitch: {
-    flexDirection: "row",
-    backgroundColor: "#EAF1EC",
-    borderRadius: 8,
-    padding: 3
-  },
-  languageOption: {
-    borderRadius: 6,
-    paddingHorizontal: 11,
-    paddingVertical: 7
-  },
-  languageActive: {
-    backgroundColor: "#2E6B4F"
-  },
-  languageText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#52635A"
-  },
-  languageTextActive: {
-    color: "#FFFFFF"
   },
   tabBar: {
     position: "absolute",

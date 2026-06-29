@@ -2,7 +2,7 @@ import { Category, Language, MatchLevel } from "./types";
 
 type Dictionary = Record<string, string>;
 
-const dictionaries: Record<Language, Dictionary> = {
+const dictionaries: Record<Exclude<Language, "easy_ja">, Dictionary> = {
   ja: {
     appName: "ココロテラス",
     appTagline: "兵庫県の福祉支援ナビ",
@@ -137,6 +137,7 @@ const dictionaries: Record<Language, Dictionary> = {
     yes: "あり",
     no: "なし",
     ja: "日本語",
+    easy_ja: "やさしい日本語にする",
     en: "English",
     reminder: "期限リマインドを試す",
     reminderSet: "通知の準備をしました",
@@ -281,6 +282,7 @@ const dictionaries: Record<Language, Dictionary> = {
     yes: "Yes",
     no: "No",
     ja: "Japanese",
+    easy_ja: "Use Easy Japanese",
     en: "English",
     reminder: "Try deadline reminder",
     reminderSet: "Reminder is ready",
@@ -291,8 +293,150 @@ const dictionaries: Record<Language, Dictionary> = {
   }
 };
 
+const easyJapaneseDictionary: Dictionary = {
+  ...dictionaries.ja,
+  appTagline: "ひょうごけんの ふくし しえん ナビ",
+  loadingProfile: "プロフィールを よみこんでいます。",
+  programData_loading: "しえんデータを みています",
+  programData_cloud: "クラウドの データを だしています",
+  programData_local: "スマホの中の データを だしています",
+  firstProfileTitle: "はじめに プロフィールを きめます",
+  firstProfileBody:
+    "えらんだことは、このスマホに ほぞんします。あとで プロフィールから かえられます。",
+  saveAndStart: "ほぞんして はじめる",
+  resetProfile: "はじめの せっていに もどす",
+  resetProfileHint:
+    "テストしたいときや、入力を やりなおしたいときに、プロフィールを けせます。",
+  resetProfileConfirmTitle: "プロフィールを けしますか？",
+  resetProfileConfirmBody:
+    "このスマホに ほぞんした プロフィールを けして、はじめの画面に もどります。",
+  cancel: "やめる",
+  search: "さがす",
+  concernSearch: "こまりごとから さがす",
+  filterByKeyword: "ことばで しぼる",
+  concernResultTitle: "あなたに かんけい ありそうな しえん",
+  searchPlaceholder: "制度名、こまりごと、もっていくもので しぼる",
+  concern_money: "お金が たりない",
+  concern_money_hint:
+    "手当、給付、貸付、生活相談など、お金の ふあんに かんけいする しえんを だします。",
+  concern_housing: "家賃・すまい",
+  concern_housing_hint:
+    "家賃、ひっこし、住むところに かんけいする しえんを だします。",
+  concern_school: "子どもの 学校のお金",
+  concern_school_hint:
+    "学校、進学、学費、子どもの まなびに かんけいする しえんを だします。",
+  concern_single_parent: "ひとり親",
+  concern_single_parent_hint:
+    "ひとり親家庭の 相談、手当、仕事、すまい、子育ての しえんを だします。",
+  concern_disability: "しょうがい",
+  concern_disability_hint:
+    "本人、子ども、家族の しょうがいに かんけいする 手当や 相談を だします。",
+  concern_caregiving: "かいご",
+  concern_caregiving_hint:
+    "かいごや 家族のケアに かんけいする しえんを だします。",
+  concern_foreign: "外国語で 相談したい",
+  concern_foreign_hint:
+    "外国人住民むけの 生活情報、多言語の相談、手続きの案内を だします。",
+  concern_urgent: "今すぐ 相談したい",
+  concern_urgent_hint:
+    "生活、DV、子育て、すまいなど、まず相談できる まどぐちを だします。",
+  alerts: "お知らせ",
+  personalNotificationSettings: "あなた向け しえんの お知らせ設定",
+  notificationFrequency: "お知らせの 回数",
+  notificationPreview: "お知らせの 例",
+  notificationExplanation:
+    "お知らせは このスマホで 予約します。プロフィールやデータが かわったら、もう一度 設定してください。",
+  supportNotificationTitle: "ココロテラスからの お知らせ",
+  daily: "1日 1回",
+  weekly: "週 1回",
+  off: "お知らせしない",
+  notificationScheduleSaved: "お知らせを 設定しました",
+  notificationOffMessage: "お知らせを オフにしました。",
+  notificationPermissionNeeded: "お知らせの 許可が 必要です。",
+  sendTestNotification: "ためしに お知らせする",
+  testNotificationSent: "ためしの お知らせを 予約しました",
+  testNotificationHint: "5秒くらいあとに お知らせが とどきます。",
+  noDeadlinePrograms: "しめきりが 近い しえんは ありません。",
+  likelySupport: "あなたに かんけい ありそうな しえん",
+  savedPrograms: "あとで見る しえん",
+  noSavedPrograms: "ほぞんした しえんは まだありません。",
+  saveForLater: "あとで見るに ほぞん",
+  savedForLater: "ほぞんずみ",
+  profileConditions: "いまの じょうけん",
+  noMatchingPrograms: "このじょうけんに あいそうな しえんは まだありません。",
+  deadlineSoon: "しめきりが 近い しえん",
+  officialCheck:
+    "つかえる かもしれません。くわしいことは 公式ページか まどぐちで かくにんしてください。",
+  high: "つかえる 可能性が 高い",
+  needs_check: "かくにんが 必要",
+  unlikely: "対象ではない 可能性が 高い",
+  childcare: "子育ての しえん",
+  livelihood: "生活に こまったとき",
+  medical: "医療の しえん",
+  foreign: "外国人むけ",
+  disability: "しょうがい",
+  caregiving: "かいご",
+  housing: "すまい",
+  emergency: "急ぎの 相談",
+  consultation: "相談する ところ",
+  details: "くわしいこと",
+  benefit: "うけられる こと",
+  consultationMemo: "そうだん メモ",
+  consultationMemoHint:
+    "まどぐちで 話すことを まとめられます。白紙から書くか、文章生成を 使ってください。",
+  useMemoTemplate: "文章を つくる",
+  clearMemo: "文章を けす",
+  memoCopiedBody:
+    "そうだんメモを コピーしました。連絡や メモアプリに はれます。",
+  memoTemplateTitle: "文章を つくりました",
+  memoTemplateBody:
+    "プロフィールと 制度の情報から、そうだんメモを つくりました。",
+  memoClearedTitle: "けしました",
+  memoClearedBody: "そうだんメモの 文章を けしました。",
+  eligibility: "つかえる かもしれない人",
+  deadline: "もうしこみの しめきり",
+  documents: "もっていくもの",
+  documentsReady: "じゅんび できた",
+  documentChecklistHint:
+    "じゅんびできた ものに チェックできます。チェックは このスマホに ほぞんします。",
+  apply: "もうしこみの しかた",
+  officialSite: "ただしい 情報を みる",
+  aiNotice:
+    "AIが かんたんに まとめた文です。もうしこみ前に、かならず 公式情報を かくにんしてください。",
+  region: "住んでいる ところ",
+  household: "家族の かたち",
+  childCount: "子どもの 人数",
+  noChildren: "子ども なし",
+  disabilityStatus: "しょうがいの あり・なし",
+  disabilitySupportOn: "しょうがいの しえん あり",
+  disabilitySupportOff: "しょうがいの しえん なし",
+  foreignSupportOn: "外国人むけ しえん あり",
+  foreignSupportOff: "外国人むけ しえん なし",
+  language: "ことば",
+  foreignSupport: "外国人むけ しえんを 出す",
+  notifications: "お知らせ",
+  two_parent: "ふたり親・夫婦",
+  single: "ひとり",
+  yes: "あり",
+  no: "なし",
+  easy_ja: "やさしい日本語にする",
+  reminder: "しめきりの お知らせを ためす",
+  reminderSet: "お知らせの じゅんびを しました",
+  noDeadline: "いつでも",
+  source: "情報の もと",
+  privacy:
+    "ほぞんする 情報は できるだけ 少なくします。いつでも けせます。",
+  matchReasonTitle: "出てきた わけ",
+  detailNextActionLabel: "つぎに すること"
+};
+
+const allDictionaries: Record<Language, Dictionary> = {
+  ...dictionaries,
+  easy_ja: easyJapaneseDictionary
+};
+
 export function t(language: Language, key: string): string {
-  return dictionaries[language][key] ?? key;
+  return allDictionaries[language][key] ?? dictionaries.ja[key] ?? key;
 }
 
 export function categoryLabel(language: Language, category: Category): string {
