@@ -101,12 +101,6 @@ npm run firestore:import:dry
 
 サービスアカウント秘密鍵は公開してはいけません。`secrets/firebase-service-account.json` はGit管理に含めないでください。
 
-## APIキーの管理
-
-- APIキーやサービスアカウント秘密鍵は、コードやREADMEに直接書かないでください
-- Firebaseの設定値は `.env` に保存してください
-- `.env` と `secrets/` はGit管理しないでください
-- GitHubに漏れたキーは、Firebase / Google Cloud側で再発行または制限してください
 
 ## 注意点
 
